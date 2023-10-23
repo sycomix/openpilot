@@ -10,16 +10,10 @@ ANGLE_DELTA_V = [5., .8, .15]     # windup limit
 ANGLE_DELTA_VU = [5., 3.5, 0.4]   # unwind limit
 
 def twos_comp(val, bits):
-  if val >= 0:
-    return val
-  else:
-    return (2**bits) + val
+  return val if val >= 0 else (2**bits) + val
 
 def sign(a):
-  if a > 0:
-    return 1
-  else:
-    return -1
+  return 1 if a > 0 else -1
 
 class TestToyotaSafety(unittest.TestCase):
   @classmethod
@@ -37,7 +31,7 @@ class TestToyotaSafety(unittest.TestCase):
     return to_send
 
   def _torque_driver_msg_array(self, torque):
-    for i in range(6):
+    for _ in range(6):
       self.safety.safety_rx_hook(self._torque_driver_msg(torque))
 
   def _angle_meas_msg(self, angle):
@@ -49,7 +43,7 @@ class TestToyotaSafety(unittest.TestCase):
     return to_send
 
   def _angle_meas_msg_array(self, angle):
-    for i in range(6):
+    for _ in range(6):
       self.safety.safety_rx_hook(self._angle_meas_msg(angle))
 
   def _ipas_state_msg(self, state):

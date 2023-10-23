@@ -69,8 +69,8 @@ class RadarInterface(object):
     ret = car.RadarData.new_message()
     header = self.rcp.vl[RADAR_HEADER_MSG]
     fault = header['FLRRSnsrBlckd'] or header['FLRRSnstvFltPrsntInt'] or \
-      header['FLRRYawRtPlsblityFlt'] or header['FLRRHWFltPrsntInt'] or \
-      header['FLRRAntTngFltPrsnt'] or header['FLRRAlgnFltPrsnt']
+        header['FLRRYawRtPlsblityFlt'] or header['FLRRHWFltPrsntInt'] or \
+        header['FLRRAntTngFltPrsnt'] or header['FLRRAlgnFltPrsnt']
     errors = []
     if not self.rcp.can_valid:
       errors.append("canError")
@@ -108,7 +108,7 @@ class RadarInterface(object):
         self.pts[targetId].yvRel = float('nan')
 
     for oldTarget in self.pts.keys():
-      if not oldTarget in currentTargets:
+      if oldTarget not in currentTargets:
         del self.pts[oldTarget]
 
     ret.points = self.pts.values()

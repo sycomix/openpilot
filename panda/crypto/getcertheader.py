@@ -6,9 +6,8 @@ from Crypto.PublicKey import RSA
 def egcd(a, b):
   if a == 0:
     return (b, 0, 1)
-  else:
-    g, y, x = egcd(b % a, a)
-    return (g, x - (b // a) * y, y)
+  g, y, x = egcd(b % a, a)
+  return (g, x - (b // a) * y, y)
 
 def modinv(a, m):
   g, x, y = egcd(a, m)
@@ -19,12 +18,11 @@ def modinv(a, m):
 
 def to_c_string(x):
   mod = (hex(x)[2:-1].rjust(0x100, '0'))
-  hh = ''.join('\\x'+mod[i:i+2] for i in range(0, 0x100, 2))
-  return hh
+  return ''.join('\\x'+mod[i:i+2] for i in range(0, 0x100, 2))
 
 def to_c_uint32(x):
   nums = []
-  for i in range(0x20):
+  for _ in range(0x20):
     nums.append(x%(2**32))
     x /= (2**32)
   return "{"+'U,'.join(map(str, nums))+"U}"

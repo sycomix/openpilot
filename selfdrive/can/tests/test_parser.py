@@ -54,7 +54,7 @@ def run_route(route):
   if dict_keys_differ(parser_old.vl, parser_new.vl):
     return False
 
-  lr = LogReader(route + ".bz2")
+  lr = LogReader(f"{route}.bz2")
 
   route_ok = True
 
@@ -93,9 +93,9 @@ class TestCanParser(unittest.TestCase):
     }
 
     for route in self.routes.values():
-      route_filename = route + ".bz2"
+      route_filename = f"{route}.bz2"
       if not os.path.isfile(route_filename):
-        with open(route + ".bz2", "w") as f:
+        with open(f"{route}.bz2", "w") as f:
           f.write(requests.get(BASE_URL + route_filename).content)
 
   def test_parser_civic(self):

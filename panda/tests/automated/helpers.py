@@ -49,7 +49,7 @@ def connect_wifi(serial=None):
 
 FNULL = open(os.devnull, 'w')
 def _connect_wifi(dongle_id, pw, insecure_okay=False):
-  ssid = str("panda-" + dongle_id)
+  ssid = str(f"panda-{dongle_id}")
 
   r = subprocess.call(["ping", "-W", "4", "-c", "1", "192.168.0.10"], stdout=FNULL, stderr=subprocess.STDOUT)
   if not r:
@@ -62,18 +62,18 @@ def _connect_wifi(dongle_id, pw, insecure_okay=False):
     except:
       pass
 
-  print("WIFI: connecting to %s" % ssid)
+  print(f"WIFI: connecting to {ssid}")
 
   while 1:
     if sys.platform == "darwin":
-      os.system("networksetup -setairportnetwork en0 %s %s" % (ssid, pw))
+      os.system(f"networksetup -setairportnetwork en0 {ssid} {pw}")
     else:
       wlan_interface = subprocess.check_output(["sh", "-c", "iw dev | awk '/Interface/ {print $2}'"]).strip()
       cnt = 0
       MAX_TRIES = 10
       while cnt < MAX_TRIES:
         print("WIFI: scanning %d" % cnt)
-        os.system("iwlist %s scanning > /dev/null" % wlan_interface)
+        os.system(f"iwlist {wlan_interface} scanning > /dev/null")
         os.system("nmcli device wifi rescan")
         wifi_scan = filter(lambda x: ssid in x, subprocess.check_output(["nmcli","dev", "wifi", "list"]).split("\n"))
         if len(wifi_scan) != 0:
@@ -83,17 +83,16 @@ def _connect_wifi(dongle_id, pw, insecure_okay=False):
         cnt += 1
       assert cnt < MAX_TRIES
       if "-pair" in wifi_scan[0]:
-        os.system("nmcli d wifi connect %s-pair" % (ssid))
+        os.system(f"nmcli d wifi connect {ssid}-pair")
         connect_cnt = 0
         MAX_TRIES = 20
         while connect_cnt < MAX_TRIES:
           connect_cnt += 1
           r = subprocess.call(["ping", "-W", "4", "-c", "1", "192.168.0.10"], stdout=FNULL, stderr=subprocess.STDOUT)
-          if r:
-            print("Waiting for panda to ping...")
-            time.sleep(0.1)
-          else:
+          if not r:
             break
+          print("Waiting for panda to ping...")
+          time.sleep(0.1)
         if insecure_okay:
           break
         # fetch webpage
@@ -109,9 +108,8 @@ def _connect_wifi(dongle_id, pw, insecure_okay=False):
           r = requests.get("http://192.168.0.10/secure", timeout=0.01)
         except requests.exceptions.Timeout:
           print("timeout http request to secure")
-          pass
       else:
-        ret = os.system("nmcli d wifi connect %s password %s" % (ssid, pw))
+        ret = os.system(f"nmcli d wifi connect {ssid} password {pw}")
         if os.WEXITSTATUS(ret) == 0:
           #check ping too
           ping_ok = False
@@ -119,8 +117,11 @@ def _connect_wifi(dongle_id, pw, insecure_okay=False):
           MAX_TRIES = 10
           while connect_cnt < MAX_TRIES:
             connect_cnt += 1
-            r = subprocess.call(["ping", "-W", "4", "-c", "1", "192.168.0.10"], stdout=FNULL, stderr=subprocess.STDOUT)
-            if r:
+            if r := subprocess.call(
+                ["ping", "-W", "4", "-c", "1", "192.168.0.10"],
+                stdout=FNULL,
+                stderr=subprocess.STDOUT,
+            ):
               print("Waiting for panda to ping...")
               time.sleep(0.1)
             else:
@@ -132,9 +133,9 @@ def _connect_wifi(dongle_id, pw, insecure_okay=False):
   # TODO: confirm that it's connected to the right panda
 
 def time_many_sends(p, bus, precv=None, msg_count=100, msg_id=None, two_pandas=False):
-  if precv == None:
+  if precv is None:
     precv = p
-  if msg_id == None:
+  if msg_id is None:
     msg_id = random.randint(0x100, 0x200)
   if p == precv and two_pandas:
     raise ValueError("Cannot have two pandas that are the same panda")
@@ -157,16 +158,15 @@ def time_many_sends(p, bus, precv=None, msg_count=100, msg_id=None, two_pandas=F
   sent_echo.extend(filter(lambda x: x[3] == 0x80 | bus and x[0] == msg_id, r_echo))
   resp = filter(lambda x: x[3] == bus and x[0] == msg_id, r)
 
-  leftovers = filter(lambda x: (x[3] != 0x80 | bus and x[3] != bus) or x[0] != msg_id, r)
+  leftovers = filter(lambda x: x[3] not in [0x80 | bus, bus] or x[0] != msg_id,
+                     r)
   assert_equal(len(leftovers), 0)
 
   assert_equal(len(resp), msg_count)
   assert_equal(len(sent_echo), msg_count)
 
   et = (et-st)*1000.0
-  comp_kbps = (1+11+1+1+1+4+8*8+15+1+1+1+7)*msg_count / et
-
-  return comp_kbps
+  return (1+11+1+1+1+4+8*8+15+1+1+1+7)*msg_count / et
 
 _panda_serials = None
 def panda_type_to_serial(fn):
@@ -176,16 +176,16 @@ def panda_type_to_serial(fn):
     if panda_type is not None:
       if not isinstance(panda_type, list):
         panda_type = [panda_type]
-    
+
     # If not done already, get panda serials and their type
     global _panda_serials
-    if _panda_serials == None:
+    if _panda_serials is None:
       _panda_serials = []
       for serial in Panda.list():
         p = Panda(serial=serial)
         _panda_serials.append((serial, p.get_type()))
         p.close()
-    
+
     # Find a panda with the correct types and add the corresponding serial
     serials = []
     for p_type in panda_type:
@@ -199,6 +199,7 @@ def panda_type_to_serial(fn):
       if not found:
         raise IOError("No unused panda found for type: {}".format(p_type))
     return fn(serials, **kwargs)
+
   return wrapper
 
 def heartbeat_thread(p):
@@ -247,12 +248,12 @@ def clear_can_buffers(panda):
   # clear tx buffers
   for i in range(4):
     panda.can_clear(i)
-  
+
   # clear rx buffers
   panda.can_clear(0xFFFF)
   r = [1]
   st = time.time()
-  while len(r) > 0:
+  while r:
     r = panda.can_recv()
     time.sleep(0.05)
     if (time.time() - st) > 10:

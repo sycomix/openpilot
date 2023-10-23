@@ -35,8 +35,6 @@ def actuator_hystereses(brake, braking, brake_steady, v_ego, car_fingerprint):
 
 
 def brake_pump_hysteresis(apply_brake, apply_brake_last, last_pump_ts, ts):
-  pump_on = False
-
   # reset pump timer if:
   # - there is an increment in brake request
   # - we are applying steady state brakes and we haven't been running the pump
@@ -44,10 +42,7 @@ def brake_pump_hysteresis(apply_brake, apply_brake_last, last_pump_ts, ts):
   if apply_brake > apply_brake_last or (ts - last_pump_ts > 20. and apply_brake > 0):
     last_pump_ts = ts
 
-  # once the pump is on, run it for at least 0.2s
-  if ts - last_pump_ts < 0.2 and apply_brake > 0:
-    pump_on = True
-
+  pump_on = ts - last_pump_ts < 0.2 and apply_brake > 0
   return pump_on, last_pump_ts
 
 
@@ -84,8 +79,8 @@ class CarController(object):
     self.new_radar_config = False
 
   def update(self, enabled, CS, frame, actuators, \
-             pcm_speed, pcm_override, pcm_cancel_cmd, pcm_accel, \
-             hud_v_cruise, hud_show_lanes, hud_show_car, hud_alert):
+               pcm_speed, pcm_override, pcm_cancel_cmd, pcm_accel, \
+               hud_v_cruise, hud_show_lanes, hud_show_car, hud_alert):
 
     # *** apply brake hysteresis ***
     brake, self.braking, self.brake_steady = actuator_hystereses(actuators.brake, self.braking, self.brake_steady, CS.v_ego, CS.CP.carFingerprint)
@@ -99,16 +94,9 @@ class CarController(object):
     self.brake_last = rate_limit(brake, self.brake_last, -2., 1./100)
 
     # vehicle hud display, wait for one update from 10Hz 0x304 msg
-    if hud_show_lanes:
-      hud_lanes = 1
-    else:
-      hud_lanes = 0
-
+    hud_lanes = 1 if hud_show_lanes else 0
     if enabled:
-      if hud_show_car:
-        hud_car = 2
-      else:
-        hud_car = 1
+      hud_car = 2 if hud_show_car else 1
     else:
       hud_car = 0
 
@@ -137,14 +125,18 @@ class CarController(object):
 
     lkas_active = enabled and not CS.steer_not_allowed
 
-    # Send CAN commands.
-    can_sends = []
-
     # Send steering command.
     idx = frame % 4
-    can_sends.append(hondacan.create_steering_control(self.packer, apply_steer,
-      lkas_active, CS.CP.carFingerprint, idx, CS.CP.isPandaBlack))
-
+    can_sends = [
+        hondacan.create_steering_control(
+            self.packer,
+            apply_steer,
+            lkas_active,
+            CS.CP.carFingerprint,
+            idx,
+            CS.CP.isPandaBlack,
+        )
+    ]
     # Send dashboard UI commands.
     if (frame % 10) == 0:
       idx = (frame//10) % 4
@@ -157,19 +149,17 @@ class CarController(object):
       elif CS.stopped:
         can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, idx, CS.CP.carFingerprint, CS.CP.isPandaBlack))
 
-    else:
-      # Send gas and brake commands.
-      if (frame % 2) == 0:
-        idx = frame // 2
-        ts = frame * DT_CTRL
-        pump_on, self.last_pump_ts = brake_pump_hysteresis(apply_brake, self.apply_brake_last, self.last_pump_ts, ts)
-        can_sends.append(hondacan.create_brake_command(self.packer, apply_brake, pump_on,
-          pcm_override, pcm_cancel_cmd, hud.fcw, idx, CS.CP.carFingerprint, CS.CP.isPandaBlack))
-        self.apply_brake_last = apply_brake
+    elif (frame % 2) == 0:
+      idx = frame // 2
+      ts = frame * DT_CTRL
+      pump_on, self.last_pump_ts = brake_pump_hysteresis(apply_brake, self.apply_brake_last, self.last_pump_ts, ts)
+      can_sends.append(hondacan.create_brake_command(self.packer, apply_brake, pump_on,
+        pcm_override, pcm_cancel_cmd, hud.fcw, idx, CS.CP.carFingerprint, CS.CP.isPandaBlack))
+      self.apply_brake_last = apply_brake
 
-        if CS.CP.enableGasInterceptor:
-          # send exactly zero if apply_gas is zero. Interceptor will send the max between read value and apply_gas.
-          # This prevents unexpected pedal range rescaling
-          can_sends.append(create_gas_command(self.packer, apply_gas, idx))
+      if CS.CP.enableGasInterceptor:
+        # send exactly zero if apply_gas is zero. Interceptor will send the max between read value and apply_gas.
+        # This prevents unexpected pedal range rescaling
+        can_sends.append(create_gas_command(self.packer, apply_gas, idx))
 
     return can_sends

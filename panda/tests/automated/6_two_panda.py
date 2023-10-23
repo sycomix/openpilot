@@ -62,6 +62,8 @@ def test_latency(p_send, p_recv):
 
   busses = [0,1,2]
 
+  num_messages = 100
+
   for bus in busses:
     for speed in [100, 250, 500, 750, 1000]:
       p_send.set_can_speed_kbps(bus, speed)
@@ -76,21 +78,19 @@ def test_latency(p_send, p_recv):
       comp_kbps_list = []
       saturation_pcts = []
 
-      num_messages = 100
-
-      for i in range(num_messages):
+      for _ in range(num_messages):
         st = time.time()
         p_send.can_send(0x1ab, "message", bus)
         r = []
-        while len(r) < 1 and (time.time() - st) < 5:
+        while not r and (time.time() - st) < 5:
           r = p_recv.can_recv()
         et = time.time()
         r_echo = []
-        while len(r_echo) < 1 and (time.time() - st) < 10:
+        while not r_echo and (time.time() - st) < 10:
           r_echo = p_send.can_recv()
 
         if len(r) == 0 or len(r_echo) == 0:
-          print("r: {}, r_echo: {}".format(r, r_echo))
+          print(f"r: {r}, r_echo: {r_echo}")
 
         assert_equal(len(r),1)
         assert_equal(len(r_echo),1)
@@ -155,7 +155,7 @@ def test_black_loopback(panda0, panda1):
   def _test_buses(send_panda, recv_panda, _test_array):
     for send_bus, send_obd, recv_obd, recv_buses in _test_array:
       print("\nSend bus:", send_bus, " Send OBD:", send_obd, " Recv OBD:", recv_obd)
-      
+
       # set OBD on pandas
       send_panda.set_gmlan(True if send_obd else None)
       recv_panda.set_gmlan(True if recv_obd else None)
@@ -166,7 +166,7 @@ def test_black_loopback(panda0, panda1):
 
       # send the characters
       at = random.randint(1, 2000)
-      st = get_test_string()[0:8]
+      st = get_test_string()[:8]
       send_panda.can_send(at, st, send_bus)
       time.sleep(0.1)
 
@@ -176,11 +176,11 @@ def test_black_loopback(panda0, panda1):
 
       loop_buses = []
       for loop in cans_loop:
-        print("  Loop on bus", str(loop[3]))
+        print("  Loop on bus", loop[3])
         loop_buses.append(loop[3])
       if len(cans_loop) == 0:
         print("  No loop")
-      
+
       # test loop buses
       recv_buses.sort()
       loop_buses.sort()

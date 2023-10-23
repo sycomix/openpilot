@@ -9,9 +9,8 @@ from selfdrive.swaglog import cloudlog
 NICE_LOW_PRIORITY = ["nice", "-n", "19"]
 def main(gctx=None):
   while True:
-    # try network
-    ping_failed = subprocess.call(["ping", "-W", "4", "-c", "1", "8.8.8.8"])
-    if ping_failed:
+    if ping_failed := subprocess.call(
+        ["ping", "-W", "4", "-c", "1", "8.8.8.8"]):
       time.sleep(60)
       continue
 

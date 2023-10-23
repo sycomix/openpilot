@@ -22,7 +22,7 @@ def main():
   for i in range(10):
     print("Loop %d" % i)
     at = random.randint(1024, 2000)
-    st = get_test_string()[0:8]
+    st = get_test_string()[:8]
     snd.send(can_list_to_can_capnp([[at, 0, st, 0]], msgtype='sendcan').to_bytes())
     time.sleep(0.1)
     res = drain_sock(rcv, True)

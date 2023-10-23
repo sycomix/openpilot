@@ -31,6 +31,8 @@ class Metric(object):
         '''Mesaure function execution time in seconds
            and forward it to Logentries'''
 
+
+
         class Timer(object):
 
             def __init__(self, summary):
@@ -43,7 +45,9 @@ class Metric(object):
                 global glob_time
                 self._summary.observe(max(time.time() - self._start, 0))
                 glob_time = time.time()- self._start
-                log.info("function_name=" + glob_name + " " + "execution_time=" + str(glob_time) + " " + "cpu=" + str(psutil.cpu_percent(interval=None)) + " " + "cpu_count=" + str(psutil.cpu_count())+ " " + "memory=" + str(psutil.virtual_memory()) )
+                log.info(
+                    f"function_name={glob_name} execution_time={str(glob_time)} cpu={str(psutil.cpu_percent(interval=None))} cpu_count={str(psutil.cpu_count())} memory={str(psutil.virtual_memory())}"
+                )
 
             def __call__(self, f):
                 @wraps(f)
@@ -54,4 +58,6 @@ class Metric(object):
 
                         return f(*args, **kwargs)
                 return wrapped
+
+
         return Timer(self)

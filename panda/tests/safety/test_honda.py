@@ -227,10 +227,7 @@ class TestHondaSafety(unittest.TestCase):
       for gas in np.arange(0, 4000, 100):
         for controls_allowed in [True, False]:
           self.safety.set_controls_allowed(controls_allowed)
-          if controls_allowed and long_controls_allowed:
-            send = True
-          else:
-            send = gas == 0
+          send = True if controls_allowed and long_controls_allowed else gas == 0
           self.assertEqual(send, self.safety.safety_tx_hook(self._send_interceptor_msg(gas, 0x200)))
     self.safety.set_long_controls_allowed(True)
 

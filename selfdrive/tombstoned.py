@@ -35,14 +35,12 @@ def report_tombstone(fn, client):
   logtail = re.search(r"--------- tail end of.*\n([\s\S]*?\n)---", dat)
   logtail = logtail and logtail.group(1)
 
-  if parsed:
-    parsedict = parsed.groupdict()
-  else:
-    parsedict = {}
-
+  parsedict = parsed.groupdict() if parsed else {}
   thread_line = parsedict.get('thread', '')
-  thread_parsed = re.match(r'pid: (?P<pid>\d+), tid: (?P<tid>\d+), name: (?P<name>.*) >>> (?P<cmd>.*) <<<', thread_line)
-  if thread_parsed:
+  if thread_parsed := re.match(
+      r'pid: (?P<pid>\d+), tid: (?P<tid>\d+), name: (?P<name>.*) >>> (?P<cmd>.*) <<<',
+      thread_line,
+  ):
     thread_parseddict = thread_parsed.groupdict()
   else:
     thread_parseddict = {}
@@ -52,8 +50,10 @@ def report_tombstone(fn, client):
   cmd = thread_parseddict.get('cmd', 'unknown')
 
   signal_line = parsedict.get('signal', '')
-  signal_parsed = re.match(r'signal (?P<signal>.*?), code (?P<code>.*?), fault addr (?P<fault_addr>.*)\n', signal_line)
-  if signal_parsed:
+  if signal_parsed := re.match(
+      r'signal (?P<signal>.*?), code (?P<code>.*?), fault addr (?P<fault_addr>.*)\n',
+      signal_line,
+  ):
     signal_parseddict = signal_parsed.groupdict()
   else:
     signal_parseddict = {}
@@ -64,7 +64,7 @@ def report_tombstone(fn, client):
   abort_line = parsedict.get('abort', '')
 
   if parsed:
-    message = 'Process {} ({}) got signal {} code {}'.format(name, cmd, signal, code)
+    message = f'Process {name} ({cmd}) got signal {signal} code {code}'
     if abort_line:
       message += '\n'+abort_line
   else:
@@ -72,31 +72,34 @@ def report_tombstone(fn, client):
 
 
   client.captureMessage(
-    message=message,
-    date=datetime.datetime.utcfromtimestamp(mtime),
-    data={
-      'logger':'tombstoned',
-      'platform':'other',
-    },
-    sdk={'name': 'tombstoned', 'version': '0'},
-    extra={
-      'fault_addr': fault_addr,
-      'abort_msg': abort_line,
-      'pid': pid,
-      'tid': tid,
-      'name':'{} ({})'.format(name, cmd),
-      'tombstone_fn': fn,
-      'header': parsedict.get('header'),
-      'registers': parsedict.get('registers'),
-      'backtrace': parsedict.get('backtrace'),
-      'logtail': logtail,
-    },
-    tags={
-      'name':'{} ({})'.format(name, cmd),
-      'signal':signal,
-      'code':code,
-      'fault_addr':fault_addr,
-    },
+      message=message,
+      date=datetime.datetime.utcfromtimestamp(mtime),
+      data={
+          'logger': 'tombstoned',
+          'platform': 'other',
+      },
+      sdk={
+          'name': 'tombstoned',
+          'version': '0'
+      },
+      extra={
+          'fault_addr': fault_addr,
+          'abort_msg': abort_line,
+          'pid': pid,
+          'tid': tid,
+          'name': f'{name} ({cmd})',
+          'tombstone_fn': fn,
+          'header': parsedict.get('header'),
+          'registers': parsedict.get('registers'),
+          'backtrace': parsedict.get('backtrace'),
+          'logtail': logtail,
+      },
+      tags={
+          'name': f'{name} ({cmd})',
+          'signal': signal,
+          'code': code,
+          'fault_addr': fault_addr,
+      },
   )
   cloudlog.error({'tombstone': message})
 

@@ -140,13 +140,7 @@ class ELMCarSimulator():
             print("LIN MSG", "Addr:", hex(toaddr), "obdLen:", len(data),
                   binascii.hexlify(data))
 
-        outmsg = None
-        #if data == b'\x3E':
-        #    print("KEEP ALIVE")
-        #el
-        if len(data) > 1:
-            outmsg = self._process_obd(data[0], data[1])
-
+        outmsg = self._process_obd(data[0], data[1]) if len(data) > 1 else None
         if outmsg:
             obd_header = struct.pack("BB", 0x40 | data[0], data[1])
             if len(outmsg) <= 5:
@@ -210,9 +204,10 @@ class ELMCarSimulator():
     def _can_addr_matches(self, addr):
         if self.__can11b and (addr == 0x7DF or (addr & 0x7F8) == 0x7E0):
             return True
-        if self.__can29b and (addr == 0x18db33f1 or (addr & 0x1FFF00FF) == 0x18da00f1):
-            return True
-        return False
+        return bool(
+            self.__can29b
+            and (addr == 0x18DB33F1 or (addr & 0x1FFF00FF) == 0x18DA00F1)
+        )
 
     def __can_process_msg(self, mode, pid, address, ts, data, src):
         if not self.__silent:
@@ -226,7 +221,7 @@ class ELMCarSimulator():
             if data[:3] == b'\x30\x00\x00' and len(self.__can_multipart_data):
                 if not self.__silent:
                     print("Request for more data");
-                outaddr = 0x7E8 if address == 0x7DF or address == 0x7E0 else 0x18DAF110
+                outaddr = 0x7E8 if address in [0x7DF, 0x7E0] else 0x18DAF110
                 msgnum = 1
                 while(self.__can_multipart_data):
                     datalen = min(7, len(self.__can_multipart_data))
@@ -240,7 +235,7 @@ class ELMCarSimulator():
                 outmsg = self._process_obd(mode, pid)
 
             if outmsg:
-                outaddr = 0x7E8 if address == 0x7DF or address == 0x7E0 else 0x18DAF110
+                outaddr = 0x7E8 if address in [0x7DF, 0x7E0] else 0x18DAF110
 
                 if len(outmsg) <= 5:
                     self._can_send(outaddr,
@@ -260,26 +255,22 @@ class ELMCarSimulator():
 
     def _process_obd(self, mode, pid):
         if mode == 0x01: # Mode: Show current data
-            if pid == 0x00:   #List supported things
+            if pid == 0x00:
                 return b"\xff\xff\xff\xfe"#b"\xBE\x1F\xB8\x10" #Bitfield, random features
-            elif pid == 0x01: # Monitor Status since DTC cleared
+            elif pid == 0x01:
                 return b"\x00\x00\x00\x00" #Bitfield, random features
-            elif pid == 0x04: # Calculated engine load
-                return b"\x2f"
-            elif pid == 0x05: # Engine coolant temperature
-                return b"\x3c"
-            elif pid == 0x0B: # Intake manifold absolute pressure
+            elif pid in [0x0B, 0x11, 0x33]:
                 return b"\x90"
-            elif pid == 0x0C: # Engine RPM
+            elif pid == 0x0C:
                 return b"\x1A\xF8"
-            elif pid == 0x0D: # Vehicle Speed
+            elif pid == 0x0D:
                 return b"\x53"
-            elif pid == 0x10: # MAF air flow rate
+            elif pid == 0x10:
                 return b"\x01\xA0"
-            elif pid == 0x11: # Throttle Position
-                return b"\x90"
-            elif pid == 0x33: # Absolute Barometric Pressure
-                return b"\x90"
+            elif pid == 0x04:
+                return b"\x2f"
+            elif pid == 0x05:
+                return b"\x3c"
         elif mode == 0x09: # Mode: Request vehicle information
             if pid == 0x02:   # Show VIN
                 return b"1D4GP00R55B123456"
@@ -293,7 +284,7 @@ class ELMCarSimulator():
                 return b'\xAA\xAA\xAA' + b''.join(parts) + b'\xAA'
             if pid == 0xFF:
                 return b'\xAA\x00\x00' +\
-                        b"".join(((b'\xAA'*5)+struct.pack(">H", num+1) for num in range(584)))
+                            b"".join(((b'\xAA'*5)+struct.pack(">H", num+1) for num in range(584)))
                 #return b"\xAA"*100#(0xFFF-3)
 
 

@@ -72,7 +72,7 @@ class CarState(object):
     v_ego_x = self.v_ego_kf.update(v_wheel)
     self.v_ego = float(v_ego_x[0])
     self.a_ego = float(v_ego_x[1])
-    self.standstill = not v_wheel > 0.001
+    self.standstill = v_wheel <= 0.001
 
     self.angle_steers = cp.vl["Steering_Wheel_Data_CG1"]['SteWhlRelInit_An_Sns']
     self.v_cruise_pcm = cp.vl["Cruise_Status"]['Set_Speed'] * CV.MPH_TO_MS

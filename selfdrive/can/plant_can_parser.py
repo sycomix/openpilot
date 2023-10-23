@@ -21,7 +21,7 @@ class CANParser(object):
     #             - frequency is the frequency at which health should be monitored.
 
     checks = [] if checks is None else checks
-    self.msgs_ck = set([check[0] for check in checks])
+    self.msgs_ck = {check[0] for check in checks}
     self.frqs = dict(checks)
     self.can_valid = False  # start with False CAN assumption
     # list of received msg we want to monitor counter and checksum for
@@ -64,8 +64,7 @@ class CANParser(object):
 
     # we are subscribing to PID_XXX, else data from USB
     for msg, ts, cdat, _ in can_recv:
-      idxs = self._message_indices[msg]
-      if idxs:
+      if idxs := self._message_indices[msg]:
         msgs_upd.append(msg)
         # read the entire message
         out = self.can_dbc.decode((msg, 0, cdat))[1]

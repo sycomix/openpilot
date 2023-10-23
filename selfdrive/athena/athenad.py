@@ -27,7 +27,7 @@ from selfdrive.version import version, dirty
 
 ATHENA_HOST = os.getenv('ATHENA_HOST', 'wss://athena.comma.ai')
 HANDLER_THREADS = os.getenv('HANDLER_THREADS', 4)
-LOCAL_PORT_WHITELIST = set([8022])
+LOCAL_PORT_WHITELIST = {8022}
 
 dispatcher["echo"] = lambda s: s
 payload_queue = six.moves.queue.Queue()
@@ -37,11 +37,11 @@ def handle_long_poll(ws):
   end_event = threading.Event()
 
   threads = [
-    threading.Thread(target=ws_recv, args=(ws, end_event)),
-    threading.Thread(target=ws_send, args=(ws, end_event))
+      threading.Thread(target=ws_recv, args=(ws, end_event)),
+      threading.Thread(target=ws_send, args=(ws, end_event)),
   ] + [
-    threading.Thread(target=jsonrpc_handler, args=(end_event,))
-    for x in xrange(HANDLER_THREADS)
+      threading.Thread(target=jsonrpc_handler, args=(end_event, ))
+      for _ in xrange(HANDLER_THREADS)
   ]
 
   map(lambda thread: thread.start(), threads)
@@ -52,7 +52,7 @@ def handle_long_poll(ws):
     end_event.set()
     raise
   finally:
-    for i, thread in enumerate(threads):
+    for thread in threads:
       thread.join()
 
 def jsonrpc_handler(end_event):
@@ -82,8 +82,10 @@ def getMessage(service=None, timeout=1000):
 
 @dispatcher.add_method
 def listDataDirectory():
-  files = [os.path.relpath(os.path.join(dp, f), ROOT) for dp, dn, fn in os.walk(ROOT) for f in fn]
-  return files
+  return [
+      os.path.relpath(os.path.join(dp, f), ROOT)
+      for dp, dn, fn in os.walk(ROOT) for f in fn
+  ]
 
 @dispatcher.add_method
 def uploadFileToUrl(fn, url, headers):
@@ -104,7 +106,7 @@ def startLocalProxy(global_end_event, remote_ws_uri, local_port):
     dongle_id = params.get("DongleId")
     identity_token = Api(dongle_id).get_token()
     ws = create_connection(remote_ws_uri,
-                           cookie="jwt=" + identity_token,
+                           cookie=f"jwt={identity_token}",
                            enable_multithread=True)
 
     ssock, csock = socket.socketpair()
@@ -222,7 +224,7 @@ def backoff(retries):
 def main(gctx=None):
   params = Params()
   dongle_id = params.get("DongleId")
-  ws_uri = ATHENA_HOST + "/ws/v2/" + dongle_id
+  ws_uri = f"{ATHENA_HOST}/ws/v2/{dongle_id}"
 
   crash.bind_user(id=dongle_id)
   crash.bind_extra(version=version, dirty=dirty, is_eon=True)
@@ -233,9 +235,9 @@ def main(gctx=None):
   conn_retries = 0
   while 1:
     try:
-      print("connecting to %s" % ws_uri)
+      print(f"connecting to {ws_uri}")
       ws = create_connection(ws_uri,
-                             cookie="jwt=" + api.get_token(),
+                             cookie=f"jwt={api.get_token()}",
                              enable_multithread=True)
       ws.settimeout(1)
       conn_retries = 0

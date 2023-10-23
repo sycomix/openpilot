@@ -72,44 +72,44 @@ def run_test_w_pandas(pandas, sleep_duration):
     # **** test can line loopback ****
 #    for bus, gmlan in [(0, None), (1, False), (2, False), (1, True), (2, True)]:
 for bus, gmlan in [(0, None), (1, None)]:
-      print("\ntest can", bus)
-      # flush
-      cans_echo = panda0.can_recv()
-      cans_loop = panda1.can_recv()
+  print("\ntest can", bus)
+  # flush
+  cans_echo = panda0.can_recv()
+  cans_loop = panda1.can_recv()
 
-      if gmlan is not None:
-        panda0.set_gmlan(gmlan, bus)
-        panda1.set_gmlan(gmlan, bus)
+  if gmlan is not None:
+    panda0.set_gmlan(gmlan, bus)
+    panda1.set_gmlan(gmlan, bus)
 
-      # send the characters
-      # pick addresses high enough to not conflict with honda code
-      at = random.randint(1024, 2000)
-      st = get_test_string()[0:8]
-      panda0.can_send(at, st, bus)
-      time.sleep(0.1)
+  # send the characters
+  # pick addresses high enough to not conflict with honda code
+  at = random.randint(1024, 2000)
+  st = get_test_string()[:8]
+  panda0.can_send(at, st, bus)
+  time.sleep(0.1)
 
-      # check for receive
-      cans_echo = panda0.can_recv()
-      cans_loop = panda1.can_recv()
+  # check for receive
+  cans_echo = panda0.can_recv()
+  cans_loop = panda1.can_recv()
 
-      print("Bus", bus, "echo", cans_echo, "loop", cans_loop)
+  print("Bus", bus, "echo", cans_echo, "loop", cans_loop)
 
-      assert len(cans_echo) == 1
-      assert len(cans_loop) == 1
+  assert len(cans_echo) == 1
+  assert len(cans_loop) == 1
 
-      assert cans_echo[0][0] == at
-      assert cans_loop[0][0] == at
+  assert cans_echo[0][0] == at
+  assert cans_loop[0][0] == at
 
-      assert cans_echo[0][2] == st
-      assert cans_loop[0][2] == st
+  assert cans_echo[0][2] == st
+  assert cans_loop[0][2] == st
 
-      assert cans_echo[0][3] == 0x80 | bus
-      if cans_loop[0][3] != bus:
-        print("EXPECTED %d GOT %d" % (bus, cans_loop[0][3]))
-      assert cans_loop[0][3] == bus
+  assert cans_echo[0][3] == 0x80 | bus
+  if cans_loop[0][3] != bus:
+    print("EXPECTED %d GOT %d" % (bus, cans_loop[0][3]))
+  assert cans_loop[0][3] == bus
 
-      print("CAN pass", bus, ho)
-      time.sleep(sleep_duration)
+  print("CAN pass", bus, ho)
+  time.sleep(sleep_duration)
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
@@ -121,5 +121,5 @@ if __name__ == "__main__":
     while True:
       run_test(sleep_duration=args.sleep)
   else:
-    for i in range(args.n):
+    for _ in range(args.n):
       run_test(sleep_duration=args.sleep)

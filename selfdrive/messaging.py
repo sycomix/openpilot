@@ -35,10 +35,7 @@ def drain_sock_raw(sock, wait_for_one=False):
   ret = []
   while 1:
     try:
-      if wait_for_one and len(ret) == 0:
-        dat = sock.recv()
-      else:
-        dat = sock.recv(zmq.NOBLOCK)
+      dat = sock.recv() if wait_for_one and not ret else sock.recv(zmq.NOBLOCK)
       ret.append(dat)
     except zmq.error.Again:
       break
@@ -48,10 +45,7 @@ def drain_sock(sock, wait_for_one=False):
   ret = []
   while 1:
     try:
-      if wait_for_one and len(ret) == 0:
-        dat = sock.recv()
-      else:
-        dat = sock.recv(zmq.NOBLOCK)
+      dat = sock.recv() if wait_for_one and not ret else sock.recv(zmq.NOBLOCK)
       dat = log.Event.from_bytes(dat)
       ret.append(dat)
     except zmq.error.Again:
@@ -64,10 +58,7 @@ def recv_sock(sock, wait=False):
   dat = None
   while 1:
     try:
-      if wait and dat is None:
-        dat = sock.recv()
-      else:
-        dat = sock.recv(zmq.NOBLOCK)
+      dat = sock.recv() if wait and dat is None else sock.recv(zmq.NOBLOCK)
     except zmq.error.Again:
       break
   if dat is not None:
@@ -98,11 +89,7 @@ class SubMaster(object):
     self.logMonoTime = {}
     self.valid = {}
 
-    if ignore_alive is not None:
-      self.ignore_alive = ignore_alive
-    else:
-      self.ignore_alive = []
-
+    self.ignore_alive = ignore_alive if ignore_alive is not None else []
     for s in services:
       # TODO: get address automatically from service_list
       if addr is not None:
@@ -118,9 +105,7 @@ class SubMaster(object):
     return self.data[s]
 
   def update(self, timeout=-1):
-    msgs = []
-    for sock, _ in self.poller.poll(timeout):
-      msgs.append(recv_one(sock))
+    msgs = [recv_one(sock) for sock, _ in self.poller.poll(timeout)]
     self.update_msgs(sec_since_boot(), msgs)
 
   def update_msgs(self, cur_time, msgs):

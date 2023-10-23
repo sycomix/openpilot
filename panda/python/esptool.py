@@ -132,32 +132,32 @@ class ESPROM(object):
 
     """ Send a request and read the response """
     def command(self, op=None, data=None, chk=0):
-        if op is not None:
-            pkt = struct.pack('<BBHI', 0x00, op, len(data), chk) + data
-            self.write(pkt)
+      if op is not None:
+          pkt = struct.pack('<BBHI', 0x00, op, len(data), chk) + data
+          self.write(pkt)
 
         # tries to get a response until that response has the
         # same operation as the request or a retries limit has
         # exceeded. This is needed for some esp8266s that
         # reply with more sync responses than expected.
-        for retry in xrange(100):
-            p = self.read()
-            if len(p) < 8:
-                continue
-            (resp, op_ret, len_ret, val) = struct.unpack('<BBHI', p[:8])
-            if resp != 1:
-                continue
-            body = p[8:]
-            if op is None or op_ret == op:
-                return val, body  # valid response received
+      for _ in xrange(100):
+        p = self.read()
+        if len(p) < 8:
+            continue
+        (resp, op_ret, len_ret, val) = struct.unpack('<BBHI', p[:8])
+        if resp != 1:
+            continue
+        if op is None or op_ret == op:
+          body = p[8:]
+          return val, body  # valid response received
 
-        raise FatalError("Response doesn't match request")
+      raise FatalError("Response doesn't match request")
 
     """ Perform a connection test """
     def sync(self):
-        self.command(ESPROM.ESP_SYNC, '\x07\x07\x12\x20' + 32 * '\x55')
-        for i in xrange(7):
-            self.command()
+      self.command(ESPROM.ESP_SYNC, '\x07\x07\x12\x20' + 32 * '\x55')
+      for _ in xrange(7):
+        self.command()
 
     """ Try connecting repeatedly until successful, or giving up """
     def connect(self):
@@ -298,11 +298,10 @@ class ESPROM(object):
 
     """ Read SPI flash manufacturer and device id """
     def flash_id(self):
-        self.flash_begin(0, 0)
-        self.write_reg(0x60000240, 0x0, 0xffffffff)
-        self.write_reg(0x60000200, 0x10000000, 0xffffffff)
-        flash_id = self.read_reg(0x60000240)
-        return flash_id
+      self.flash_begin(0, 0)
+      self.write_reg(0x60000240, 0x0, 0xffffffff)
+      self.write_reg(0x60000200, 0x10000000, 0xffffffff)
+      return self.read_reg(0x60000240)
 
     """ Abuse the loader protocol to force flash to be left in write mode """
     def flash_unlock_dio(self):
@@ -440,21 +439,21 @@ class BaseFirmwareImage(object):
 class ESPFirmwareImage(BaseFirmwareImage):
     """ 'Version 1' firmware image, segments loaded directly by the ROM bootloader. """
     def __init__(self, load_file=None):
-        super(ESPFirmwareImage, self).__init__()
-        self.flash_mode = 0
-        self.flash_size_freq = 0
-        self.version = 1
+      super(ESPFirmwareImage, self).__init__()
+      self.flash_mode = 0
+      self.flash_size_freq = 0
+      self.version = 1
 
-        if load_file is not None:
-            (magic, segments, self.flash_mode, self.flash_size_freq, self.entrypoint) = struct.unpack('<BBBBI', load_file.read(8))
+      if load_file is not None:
+        (magic, segments, self.flash_mode, self.flash_size_freq, self.entrypoint) = struct.unpack('<BBBBI', load_file.read(8))
 
-            # some sanity check
-            if magic != ESPROM.ESP_IMAGE_MAGIC or segments > 16:
-                raise FatalError('Invalid firmware image magic=%d segments=%d' % (magic, segments))
+        # some sanity check
+        if magic != ESPROM.ESP_IMAGE_MAGIC or segments > 16:
+            raise FatalError('Invalid firmware image magic=%d segments=%d' % (magic, segments))
 
-            for i in xrange(segments):
-                self.load_segment(load_file)
-            self.checksum = self.read_checksum(load_file)
+        for _ in xrange(segments):
+          self.load_segment(load_file)
+        self.checksum = self.read_checksum(load_file)
 
     def save(self, filename):
         with open(filename, 'wb') as f:
@@ -612,159 +611,161 @@ class CesantaFlasher(object):
             raise FatalError('Failed to connect to the flasher (got %s)' % hexify(p))
 
     def flash_write(self, addr, data, show_progress=False):
-        assert addr % self._esp.ESP_FLASH_SECTOR == 0, 'Address must be sector-aligned'
-        assert len(data) % self._esp.ESP_FLASH_SECTOR == 0, 'Length must be sector-aligned'
-        sys.stdout.write('Writing %d @ 0x%x... ' % (len(data), addr))
-        sys.stdout.flush()
-        self._esp.write(struct.pack('<B', self.CMD_FLASH_WRITE))
-        self._esp.write(struct.pack('<III', addr, len(data), 1))
-        num_sent, num_written = 0, 0
-        while num_written < len(data):
-            p = self._esp.read()
-            if len(p) == 4:
-                num_written = struct.unpack('<I', p)[0]
-            elif len(p) == 1:
-                status_code = struct.unpack('<B', p)[0]
-                raise FatalError('Write failure, status: %x' % status_code)
-            else:
-                raise FatalError('Unexpected packet while writing: %s' % hexify(p))
-            if show_progress:
-                progress = '%d (%d %%)' % (num_written, num_written * 100.0 / len(data))
-                sys.stdout.write(progress + '\b' * len(progress))
-                sys.stdout.flush()
-            while num_sent - num_written < 5120:
-                self._esp._port.write(data[num_sent:num_sent + 1024])
-                num_sent += 1024
+      assert addr % self._esp.ESP_FLASH_SECTOR == 0, 'Address must be sector-aligned'
+      assert len(data) % self._esp.ESP_FLASH_SECTOR == 0, 'Length must be sector-aligned'
+      sys.stdout.write('Writing %d @ 0x%x... ' % (len(data), addr))
+      sys.stdout.flush()
+      self._esp.write(struct.pack('<B', self.CMD_FLASH_WRITE))
+      self._esp.write(struct.pack('<III', addr, len(data), 1))
+      num_sent, num_written = 0, 0
+      while num_written < len(data):
         p = self._esp.read()
-        if len(p) != 16:
-            raise FatalError('Expected digest, got: %s' % hexify(p))
-        digest = hexify(p).upper()
-        expected_digest = hashlib.md5(data).hexdigest().upper()
-        print
-        if digest != expected_digest:
-            raise FatalError('Digest mismatch: expected %s, got %s' % (expected_digest, digest))
-        p = self._esp.read()
-        if len(p) != 1:
-            raise FatalError('Expected status, got: %s' % hexify(p))
-        status_code = struct.unpack('<B', p)[0]
-        if status_code != 0:
+        if len(p) == 4:
+          num_written = struct.unpack('<I', p)[0]
+        elif len(p) == 1:
+            status_code = struct.unpack('<B', p)[0]
             raise FatalError('Write failure, status: %x' % status_code)
+        else:
+          raise FatalError(f'Unexpected packet while writing: {hexify(p)}')
+        if show_progress:
+            progress = '%d (%d %%)' % (num_written, num_written * 100.0 / len(data))
+            sys.stdout.write(progress + '\b' * len(progress))
+            sys.stdout.flush()
+        while num_sent - num_written < 5120:
+            self._esp._port.write(data[num_sent:num_sent + 1024])
+            num_sent += 1024
+      p = self._esp.read()
+      if len(p) != 16:
+        raise FatalError(f'Expected digest, got: {hexify(p)}')
+      digest = hexify(p).upper()
+      expected_digest = hashlib.md5(data).hexdigest().upper()
+      print
+      if digest != expected_digest:
+        raise FatalError(f'Digest mismatch: expected {expected_digest}, got {digest}')
+      p = self._esp.read()
+      if len(p) != 1:
+        raise FatalError(f'Expected status, got: {hexify(p)}')
+      status_code = struct.unpack('<B', p)[0]
+      if status_code != 0:
+          raise FatalError('Write failure, status: %x' % status_code)
 
     def flash_read(self, addr, length, show_progress=False):
-        sys.stdout.write('Reading %d @ 0x%x... ' % (length, addr))
-        sys.stdout.flush()
-        self._esp.write(struct.pack('<B', self.CMD_FLASH_READ))
-        # USB may not be able to keep up with the read rate, especially at
-        # higher speeds. Since we don't have flow control, this will result in
-        # data loss. Hence, we use small packet size and only allow small
-        # number of bytes in flight, which we can reasonably expect to fit in
-        # the on-chip FIFO. max_in_flight = 64 works for CH340G, other chips may
-        # have longer FIFOs and could benefit from increasing max_in_flight.
-        self._esp.write(struct.pack('<IIII', addr, length, 32, 64))
-        data = ''
-        while True:
-            p = self._esp.read()
-            data += p
-            self._esp.write(struct.pack('<I', len(data)))
-            if show_progress and (len(data) % 1024 == 0 or len(data) == length):
-                progress = '%d (%d %%)' % (len(data), len(data) * 100.0 / length)
-                sys.stdout.write(progress + '\b' * len(progress))
-                sys.stdout.flush()
-            if len(data) == length:
-                break
-            if len(data) > length:
-                raise FatalError('Read more than expected')
-        p = self._esp.read()
-        if len(p) != 16:
-            raise FatalError('Expected digest, got: %s' % hexify(p))
-        expected_digest = hexify(p).upper()
-        digest = hashlib.md5(data).hexdigest().upper()
-        print
-        if digest != expected_digest:
-            raise FatalError('Digest mismatch: expected %s, got %s' % (expected_digest, digest))
-        p = self._esp.read()
-        if len(p) != 1:
-            raise FatalError('Expected status, got: %s' % hexify(p))
-        status_code = struct.unpack('<B', p)[0]
-        if status_code != 0:
-            raise FatalError('Write failure, status: %x' % status_code)
-        return data
+      sys.stdout.write('Reading %d @ 0x%x... ' % (length, addr))
+      sys.stdout.flush()
+      self._esp.write(struct.pack('<B', self.CMD_FLASH_READ))
+      # USB may not be able to keep up with the read rate, especially at
+      # higher speeds. Since we don't have flow control, this will result in
+      # data loss. Hence, we use small packet size and only allow small
+      # number of bytes in flight, which we can reasonably expect to fit in
+      # the on-chip FIFO. max_in_flight = 64 works for CH340G, other chips may
+      # have longer FIFOs and could benefit from increasing max_in_flight.
+      self._esp.write(struct.pack('<IIII', addr, length, 32, 64))
+      data = ''
+      while True:
+          p = self._esp.read()
+          data += p
+          self._esp.write(struct.pack('<I', len(data)))
+          if show_progress and (len(data) % 1024 == 0 or len(data) == length):
+              progress = '%d (%d %%)' % (len(data), len(data) * 100.0 / length)
+              sys.stdout.write(progress + '\b' * len(progress))
+              sys.stdout.flush()
+          if len(data) == length:
+              break
+          if len(data) > length:
+              raise FatalError('Read more than expected')
+      p = self._esp.read()
+      if len(p) != 16:
+        raise FatalError(f'Expected digest, got: {hexify(p)}')
+      expected_digest = hexify(p).upper()
+      digest = hashlib.md5(data).hexdigest().upper()
+      print
+      if digest != expected_digest:
+        raise FatalError(f'Digest mismatch: expected {expected_digest}, got {digest}')
+      p = self._esp.read()
+      if len(p) != 1:
+        raise FatalError(f'Expected status, got: {hexify(p)}')
+      status_code = struct.unpack('<B', p)[0]
+      if status_code != 0:
+          raise FatalError('Write failure, status: %x' % status_code)
+      return data
 
     def flash_digest(self, addr, length, digest_block_size=0):
-        self._esp.write(struct.pack('<B', self.CMD_FLASH_DIGEST))
-        self._esp.write(struct.pack('<III', addr, length, digest_block_size))
-        digests = []
-        while True:
-            p = self._esp.read()
-            if len(p) == 16:
-                digests.append(p)
-            elif len(p) == 1:
-                status_code = struct.unpack('<B', p)[0]
-                if status_code != 0:
-                    raise FatalError('Write failure, status: %x' % status_code)
-                break
-            else:
-                raise FatalError('Unexpected packet: %s' % hexify(p))
-        return digests[-1], digests[:-1]
+      self._esp.write(struct.pack('<B', self.CMD_FLASH_DIGEST))
+      self._esp.write(struct.pack('<III', addr, length, digest_block_size))
+      digests = []
+      while True:
+        p = self._esp.read()
+        if len(p) == 16:
+          digests.append(p)
+        elif len(p) == 1:
+            status_code = struct.unpack('<B', p)[0]
+            if status_code != 0:
+                raise FatalError('Write failure, status: %x' % status_code)
+            break
+        else:
+          raise FatalError(f'Unexpected packet: {hexify(p)}')
+      return digests[-1], digests[:-1]
 
     def boot_fw(self):
-        self._esp.write(struct.pack('<B', self.CMD_BOOT_FW))
-        p = self._esp.read()
-        if len(p) != 1:
-            raise FatalError('Expected status, got: %s' % hexify(p))
-        status_code = struct.unpack('<B', p)[0]
-        if status_code != 0:
-            raise FatalError('Boot failure, status: %x' % status_code)
+      self._esp.write(struct.pack('<B', self.CMD_BOOT_FW))
+      p = self._esp.read()
+      if len(p) != 1:
+        raise FatalError(f'Expected status, got: {hexify(p)}')
+      status_code = struct.unpack('<B', p)[0]
+      if status_code != 0:
+          raise FatalError('Boot failure, status: %x' % status_code)
 
     def flash_erase_chip(self):
-        self._esp.write(struct.pack('<B', self.CMD_FLASH_ERASE_CHIP))
-        otimeout = self._esp._port.timeout
-        self._esp._port.timeout = 60
-        p = self._esp.read()
-        self._esp._port.timeout = otimeout
-        if len(p) != 1:
-            raise FatalError('Expected status, got: %s' % hexify(p))
-        status_code = struct.unpack('<B', p)[0]
-        if status_code != 0:
-            raise FatalError('Erase chip failure, status: %x' % status_code)
+      self._esp.write(struct.pack('<B', self.CMD_FLASH_ERASE_CHIP))
+      otimeout = self._esp._port.timeout
+      self._esp._port.timeout = 60
+      p = self._esp.read()
+      self._esp._port.timeout = otimeout
+      if len(p) != 1:
+        raise FatalError(f'Expected status, got: {hexify(p)}')
+      status_code = struct.unpack('<B', p)[0]
+      if status_code != 0:
+          raise FatalError('Erase chip failure, status: %x' % status_code)
 
 
 def slip_reader(port):
-    """Generator to read SLIP packets from a serial port.
+  """Generator to read SLIP packets from a serial port.
     Yields one full SLIP packet at a time, raises exception on timeout or invalid data.
 
     Designed to avoid too many calls to serial.read(1), which can bog
     down on slow systems.
     """
-    partial_packet = None
-    in_escape = False
-    while True:
-        waiting = port.inWaiting()
-        read_bytes = port.read(1 if waiting == 0 else waiting)
-        if read_bytes == '':
-            raise FatalError("Timed out waiting for packet %s" % ("header" if partial_packet is None else "content"))
+  partial_packet = None
+  in_escape = False
+  while True:
+    waiting = port.inWaiting()
+    read_bytes = port.read(1 if waiting == 0 else waiting)
+    if read_bytes == '':
+      raise FatalError(
+          f'Timed out waiting for packet {"header" if partial_packet is None else "content"}'
+      )
 
-        for b in read_bytes:
-            if partial_packet is None:  # waiting for packet header
-                if b == '\xc0':
-                    partial_packet = ""
-                else:
-                    raise FatalError('Invalid head of packet (%r)' % b)
-            elif in_escape:  # part-way through escape sequence
-                in_escape = False
-                if b == '\xdc':
-                    partial_packet += '\xc0'
-                elif b == '\xdd':
-                    partial_packet += '\xdb'
-                else:
-                    raise FatalError('Invalid SLIP escape (%r%r)' % ('\xdb', b))
-            elif b == '\xdb':  # start of escape sequence
-                in_escape = True
-            elif b == '\xc0':  # end of packet
-                yield partial_packet
-                partial_packet = None
-            else:  # normal byte in packet
-                partial_packet += b
+    for b in read_bytes:
+        if partial_packet is None:  # waiting for packet header
+            if b == '\xc0':
+                partial_packet = ""
+            else:
+                raise FatalError('Invalid head of packet (%r)' % b)
+        elif in_escape:  # part-way through escape sequence
+            in_escape = False
+            if b == '\xdc':
+                partial_packet += '\xc0'
+            elif b == '\xdd':
+                partial_packet += '\xdb'
+            else:
+                raise FatalError('Invalid SLIP escape (%r%r)' % ('\xdb', b))
+        elif b == '\xdb':  # start of escape sequence
+            in_escape = True
+        elif b == '\xc0':  # end of packet
+            yield partial_packet
+            partial_packet = None
+        else:  # normal byte in packet
+            partial_packet += b
 
 
 def arg_auto_int(x):
@@ -806,10 +807,9 @@ def hexify(s):
 
 
 def unhexify(hs):
-    s = ''
-    for i in range(0, len(hs) - 1, 2):
-        s += chr(int(hs[i] + hs[i + 1], 16))
-    return s
+  return ''.join(
+      chr(int(hs[i] + hs[i + 1], 16)) for i in range(0,
+                                                     len(hs) - 1, 2))
 
 
 class FatalError(RuntimeError):
@@ -1230,21 +1230,21 @@ class AddrFilenamePairAction(argparse.Action):
         super(AddrFilenamePairAction, self).__init__(option_strings, dest, nargs, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
-        # validate pair arguments
-        pairs = []
-        for i in range(0,len(values),2):
-            try:
-                address = int(values[i],0)
-            except ValueError as e:
-                raise argparse.ArgumentError(self,'Address "%s" must be a number' % values[i])
-            try:
-                argfile = open(values[i + 1], 'rb')
-            except IOError as e:
-                raise argparse.ArgumentError(self, e)
-            except IndexError:
-                raise argparse.ArgumentError(self,'Must be pairs of an address and the binary filename to write there')
-            pairs.append((address, argfile))
-        setattr(namespace, self.dest, pairs)
+      # validate pair arguments
+      pairs = []
+      for i in range(0,len(values),2):
+        try:
+          address = int(values[i],0)
+        except ValueError as e:
+          raise argparse.ArgumentError(self, f'Address "{values[i]}" must be a number')
+        try:
+            argfile = open(values[i + 1], 'rb')
+        except IOError as e:
+            raise argparse.ArgumentError(self, e)
+        except IndexError:
+            raise argparse.ArgumentError(self,'Must be pairs of an address and the binary filename to write there')
+        pairs.append((address, argfile))
+      setattr(namespace, self.dest, pairs)
 
 # This is "wrapped" stub_flasher.c, to  be loaded using run_stub.
 _CESANTA_FLASHER_STUB = """\

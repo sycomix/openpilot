@@ -7,10 +7,7 @@ from collections import namedtuple, defaultdict
 
 def int_or_float(s):
   # return number, trying to maintain int format
-  if s.isdigit():
-    return int(s, 10)
-  else:
-    return float(s)
+  return int(s, 10) if s.isdigit() else float(s)
 
 DBCSignal = namedtuple(
   "DBCSignal", ["name", "start_bit", "size", "is_little_endian", "is_signed",
@@ -197,11 +194,7 @@ class dbc(object):
         Returns (None, None) if the message could not be decoded.
     """
 
-    if arr is None:
-      out = {}
-    else:
-      out = [None]*len(arr)
-
+    out = {} if arr is None else [None]*len(arr)
     msg = self.msgs.get(x[0])
     if msg is None:
       if x[0] not in self._warned_addresses:
@@ -228,10 +221,8 @@ class dbc(object):
       offset = s[6]
 
       b2 = signal_size
-      if little_endian:
-        b1 = start_bit
-      else:
-        b1 = (start_bit // 8) * 8 + (-start_bit - 1) % 8
+      b1 = (start_bit if little_endian else
+            (start_bit // 8) * 8 + (-start_bit - 1) % 8)
       bo = 64 - (b1 + signal_size)
 
       if little_endian:

@@ -90,9 +90,7 @@ def get_model_height_transform(camera_frame_from_road_frame, height):
   ]))
 
   road_high_from_camera_frame = np.linalg.inv(camera_frame_from_road_high)
-  high_camera_from_low_camera = np.dot(camera_frame_from_road_ground, road_high_from_camera_frame)
-
-  return high_camera_from_low_camera
+  return np.dot(camera_frame_from_road_ground, road_high_from_camera_frame)
 
 
 # camera_frame_from_model_frame aka 'warp matrix'
@@ -121,9 +119,7 @@ def get_camera_frame_from_medmodel_frame(camera_frame_from_road_frame):
   medmodel_frame_from_ground = medmodel_frame_from_road_frame[:, (0, 1, 3)]
 
   ground_from_medmodel_frame = np.linalg.inv(medmodel_frame_from_ground)
-  camera_frame_from_medmodel_frame = np.dot(camera_frame_from_ground, ground_from_medmodel_frame)
-
-  return camera_frame_from_medmodel_frame
+  return np.dot(camera_frame_from_ground, ground_from_medmodel_frame)
 
 
 def get_camera_frame_from_bigmodel_frame(camera_frame_from_road_frame):
@@ -131,9 +127,7 @@ def get_camera_frame_from_bigmodel_frame(camera_frame_from_road_frame):
   bigmodel_frame_from_ground = bigmodel_frame_from_road_frame[:, (0, 1, 3)]
 
   ground_from_bigmodel_frame = np.linalg.inv(bigmodel_frame_from_ground)
-  camera_frame_from_bigmodel_frame = np.dot(camera_frame_from_ground, ground_from_bigmodel_frame)
-
-  return camera_frame_from_bigmodel_frame
+  return np.dot(camera_frame_from_ground, ground_from_bigmodel_frame)
 
 
 def get_model_frame(snu_full, camera_frame_from_model_frame, size):

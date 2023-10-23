@@ -31,10 +31,7 @@ class ElementDataWrongType(OverPyException):
         self.type_provided = type_provided
 
     def __str__(self):
-        return "Type expected '%s' but '%s' provided" % (
-            self.type_expected,
-            str(self.type_provided)
-        )
+        return f"Type expected '{self.type_expected}' but '{str(self.type_provided)}' provided"
 
 
 class MaxRetriesReached(OverPyException):
@@ -92,9 +89,7 @@ class OverpassError(OverPyException):
     def __str__(self):
         if self.msg is None:
             return "No error message provided"
-        if not isinstance(self.msg, str):
-            return str(self.msg)
-        return self.msg
+        return str(self.msg) if not isinstance(self.msg, str) else self.msg
 
 
 class OverpassGatewayTimeout(OverPyException):
@@ -142,7 +137,7 @@ class OverpassUnknownContentType(OverPyException):
     def __str__(self):
         if self.content_type is None:
             return "No content type returned"
-        return "Unknown content type: %s" % self.content_type
+        return f"Unknown content type: {self.content_type}"
 
 
 class OverpassUnknownError(OverpassError):

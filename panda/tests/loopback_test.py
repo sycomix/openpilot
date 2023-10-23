@@ -86,7 +86,7 @@ def run_test_w_pandas(pandas, sleep_duration):
 
       # send the characters
       at = random.randint(1, 2000)
-      st = get_test_string()[0:8]
+      st = get_test_string()[:8]
       panda0.can_send(at, st, bus)
       time.sleep(0.1)
 
@@ -123,5 +123,5 @@ if __name__ == "__main__":
     while True:
       run_test(sleep_duration=args.sleep)
   else:
-    for i in range(args.n):
+    for _ in range(args.n):
       run_test(sleep_duration=args.sleep)

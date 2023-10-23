@@ -21,8 +21,6 @@ class CarController(object):
   def update(self, enabled, CS, frame, actuators, visual_alert, pcm_cancel):
 
     can_sends = []
-    steer_alert = visual_alert == car.CarControl.HUDControl.VisualAlert.steerRequired
-
     apply_steer = actuators.steer
 
     if self.enable_camera:
@@ -51,8 +49,10 @@ class CarController(object):
         can_sends.append(make_can_msg(973, '\x00\x00\x00\x00\x00\x00\x00\x00', 0, False))
         #can_sends.append(make_can_msg(984, '\x00\x00\x00\x00\x80\x45\x60\x30', 0, False))
 
+      steer_alert = visual_alert == car.CarControl.HUDControl.VisualAlert.steerRequired
+
       if (frame % 100) == 0 or (self.enabled_last != enabled) or (self.main_on_last != CS.main_on) or \
-         (self.steer_alert_last != steer_alert):
+           (self.steer_alert_last != steer_alert):
         can_sends.append(create_lkas_ui(self.packer, CS.main_on, enabled, steer_alert))
 
       if (frame % 200) == 0:
@@ -60,21 +60,20 @@ class CarController(object):
 
       if (frame % 10) == 0:
 
-        can_sends.append(make_can_msg(1648, '\x00\x00\x00\x40\x00\x00\x50\x00', 1, False))
-        can_sends.append(make_can_msg(1649, '\x10\x10\xf1\x70\x04\x00\x00\x00', 1, False))
-
-        can_sends.append(make_can_msg(1664, '\x00\x00\x03\xe8\x00\x01\xa9\xb2', 1, False))
-        can_sends.append(make_can_msg(1674, '\x08\x00\x00\xff\x0c\xfb\x6a\x08', 1, False))
-        can_sends.append(make_can_msg(1675, '\x00\x00\x3b\x60\x37\x00\x00\x00', 1, False))
-        can_sends.append(make_can_msg(1690, '\x70\x00\x00\x55\x86\x1c\xe0\x00', 1, False))
-
-        can_sends.append(make_can_msg(1910, '\x06\x4b\x06\x4b\x42\xd3\x11\x30', 1, False))
-        can_sends.append(make_can_msg(1911, '\x48\x53\x37\x54\x48\x53\x37\x54', 1, False))
-        can_sends.append(make_can_msg(1912, '\x31\x34\x47\x30\x38\x31\x43\x42', 1, False))
-        can_sends.append(make_can_msg(1913, '\x31\x34\x47\x30\x38\x32\x43\x42', 1, False))
-        can_sends.append(make_can_msg(1969, '\xf4\x40\x00\x00\x00\x00\x00\x00', 1, False))
-        can_sends.append(make_can_msg(1971, '\x0b\xc0\x00\x00\x00\x00\x00\x00', 1, False))
-
+        can_sends.extend((
+            make_can_msg(1648, '\x00\x00\x00\x40\x00\x00\x50\x00', 1, False),
+            make_can_msg(1649, '\x10\x10\xf1\x70\x04\x00\x00\x00', 1, False),
+            make_can_msg(1664, '\x00\x00\x03\xe8\x00\x01\xa9\xb2', 1, False),
+            make_can_msg(1674, '\x08\x00\x00\xff\x0c\xfb\x6a\x08', 1, False),
+            make_can_msg(1675, '\x00\x00\x3b\x60\x37\x00\x00\x00', 1, False),
+            make_can_msg(1690, '\x70\x00\x00\x55\x86\x1c\xe0\x00', 1, False),
+            make_can_msg(1910, '\x06\x4b\x06\x4b\x42\xd3\x11\x30', 1, False),
+            make_can_msg(1911, '\x48\x53\x37\x54\x48\x53\x37\x54', 1, False),
+            make_can_msg(1912, '\x31\x34\x47\x30\x38\x31\x43\x42', 1, False),
+            make_can_msg(1913, '\x31\x34\x47\x30\x38\x32\x43\x42', 1, False),
+            make_can_msg(1969, '\xf4\x40\x00\x00\x00\x00\x00\x00', 1, False),
+            make_can_msg(1971, '\x0b\xc0\x00\x00\x00\x00\x00\x00', 1, False),
+        ))
       static_msgs = range(1653, 1658)
       for addr in static_msgs:
         cnt = (frame % 10) + 1

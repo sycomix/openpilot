@@ -12,10 +12,7 @@ Supports both x2y and y_from_x format (y_from_x preferred!).
 
 def euler2quat(eulers):
   eulers = array(eulers)
-  if len(eulers.shape) > 1:
-    output_shape = (-1,4)
-  else:
-    output_shape = (4,)
+  output_shape = (-1, 4) if len(eulers.shape) > 1 else (4, )
   eulers = np.atleast_2d(eulers)
   gamma, theta, psi = eulers[:,0],  eulers[:,1],  eulers[:,2]
 
@@ -37,10 +34,7 @@ def euler2quat(eulers):
 
 def quat2euler(quats):
   quats = array(quats)
-  if len(quats.shape) > 1:
-    output_shape = (-1,3)
-  else:
-    output_shape = (3,)
+  output_shape = (-1, 3) if len(quats.shape) > 1 else (3, )
   quats = np.atleast_2d(quats)
   q0, q1, q2, q3 = quats[:,0], quats[:,1], quats[:,2], quats[:,3]
 
@@ -71,10 +65,7 @@ def quat2rot(quats):
   Rs[:, 2, 1] = 2 * (q0 * q1 + q2 * q3)
   Rs[:, 2, 2] = q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3
 
-  if len(input_shape) < 2:
-    return Rs[0]
-  else:
-    return Rs
+  return Rs[0] if len(input_shape) < 2 else Rs
 
 
 def rot2quat(rots):
@@ -107,10 +98,7 @@ def rot2quat(rots):
     if q[i, 0] < 0:
       q[i] = -q[i]
 
-  if len(input_shape) < 3:
-    return q[0]
-  else:
-    return q
+  return q[0] if len(input_shape) < 3 else q
 
 
 def euler2rot(eulers):
@@ -204,8 +192,7 @@ def ecef_euler_from_ned(ned_ecef_init, ned_pose):
   z2 = rot(y2, theta).dot(z0)
   phi = np.arctan2(inner(y3, z2), inner(y3, y2))
 
-  ret = array([phi, theta, psi])
-  return ret
+  return array([phi, theta, psi])
 
 
 def ned_euler_from_ecef(ned_ecef_init, ecef_poses):
@@ -272,14 +259,10 @@ def ecef2car(car_ecef, psi, theta, points_ecef, ned_converter):
   [x, y, z] coordinates in car frame
   """
 
-  # input is an array of points in ecef cocrdinates
-  # output is an array of points in car's coordinate (x-front, y-left, z-up)
-
-  # convert points to NED
-  points_ned = []
-  for p in points_ecef:
-    points_ned.append(ned_converter.ecef2ned_matrix.dot(array(p) - car_ecef))
-
+  points_ned = [
+      ned_converter.ecef2ned_matrix.dot(array(p) - car_ecef)
+      for p in points_ecef
+  ]
   points_ned = np.vstack(points_ned).T
 
   # n, e, d -> x, y, z

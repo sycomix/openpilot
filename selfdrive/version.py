@@ -18,8 +18,10 @@ def get_git_full_branchname():
 def get_git_remote():
   try:
     local_branch = subprocess.check_output(["git", "name-rev", "--name-only", "HEAD"]).strip()
-    tracking_remote = subprocess.check_output(["git", "config", "branch." + local_branch + ".remote"]).strip()
-    return subprocess.check_output(["git", "config", "remote." + tracking_remote + ".url"]).strip()
+    tracking_remote = subprocess.check_output(
+        ["git", "config", f"branch.{local_branch}.remote"]).strip()
+    return subprocess.check_output(
+        ["git", "config", f"remote.{tracking_remote}.url"]).strip()
   except subprocess.CalledProcessError:
     # Not on a branch, fallback
     return subprocess.check_output(["git", "config", "--get", "remote.origin.url"]).strip()
@@ -62,11 +64,11 @@ training_version = "0.1.0"
 terms_version = "2"
 
 if __name__ == "__main__":
-  print("Dirty: %s" % dirty)
-  print("Version: %s" % version)
-  print("Remote: %s" % origin)
+  print(f"Dirty: {dirty}")
+  print(f"Version: {version}")
+  print(f"Remote: {origin}")
 
   try:
-    print("Branch %s" % branch)
+    print(f"Branch {branch}")
   except NameError:
     pass

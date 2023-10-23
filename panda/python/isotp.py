@@ -66,22 +66,22 @@ def isotp_send(panda, x, addr, bus=0, recvaddr=None, subaddr=None):
   if len(x) <= 7 and subaddr is None:
     panda.can_send(addr, msg(x), bus)
   elif len(x) <= 6 and subaddr is not None:
-    panda.can_send(addr, chr(subaddr)+msg(x)[0:7], bus)
+    panda.can_send(addr, chr(subaddr) + msg(x)[:7], bus)
   else:
     if subaddr:
-      ss = chr(subaddr) + chr(0x10 + (len(x)>>8)) + chr(len(x)&0xFF) + x[0:5]
+      ss = chr(subaddr) + chr(0x10 + (len(x)>>8)) + chr(len(x)&0xFF) + x[:5]
       x = x[5:]
     else:
-      ss = chr(0x10 + (len(x)>>8)) + chr(len(x)&0xFF) + x[0:6]
+      ss = chr(0x10 + (len(x)>>8)) + chr(len(x)&0xFF) + x[:6]
       x = x[6:]
     idx = 1
     sends = []
     while len(x) > 0:
       if subaddr:
-        sends.append(((chr(subaddr) + chr(0x20 + (idx&0xF)) + x[0:6]).ljust(8, "\x00")))
+        sends.append((chr(subaddr) + chr(0x20 + (idx&0xF)) + x[:6]).ljust(8, "\x00"))
         x = x[6:]
       else:
-        sends.append(((chr(0x20 + (idx&0xF)) + x[0:7]).ljust(8, "\x00")))
+        sends.append((chr(0x20 + (idx&0xF)) + x[:7]).ljust(8, "\x00"))
         x = x[7:]
       idx += 1
 

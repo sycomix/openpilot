@@ -13,7 +13,7 @@ def flash_release(path=None, st_serial=None):
   def status(x):
     print("\033[1;32;40m"+x+"\033[00m")
 
-  if st_serial == None:
+  if st_serial is None:
     # look for Panda
     panda_list = Panda.list()
     if len(panda_list) == 0:
@@ -21,27 +21,27 @@ def flash_release(path=None, st_serial=None):
     elif len(panda_list) > 1:
       raise Exception("Please only connect one panda")
     st_serial = panda_list[0]
-    print("Using panda with serial %s" % st_serial)
+    print(f"Using panda with serial {st_serial}")
 
-  if path == None:
+  if path is None:
     print("Fetching latest firmware from github.com/commaai/panda-artifacts")
     r = requests.get("https://raw.githubusercontent.com/commaai/panda-artifacts/master/latest.json")
     url = json.loads(r.text)['url']
     r = requests.get(url)
-    print("Fetching firmware from %s" % url)
+    print(f"Fetching firmware from {url}")
     path = StringIO.StringIO(r.content)
 
   zf = ZipFile(path)
   zf.printdir()
 
   version = zf.read("version")
-  status("0. Preparing to flash "+version)
+  status(f"0. Preparing to flash {version}")
 
   code_bootstub = zf.read("bootstub.panda.bin")
   code_panda = zf.read("panda.bin")
 
   code_boot_15 = zf.read("boot_v1.5.bin")
-  code_boot_15 = code_boot_15[0:2] + "\x00\x30" + code_boot_15[4:]
+  code_boot_15 = code_boot_15[:2] + "\x00\x30" + code_boot_15[4:]
 
   code_user1 = zf.read("user1.bin")
   code_user2 = zf.read("user2.bin")
@@ -83,7 +83,7 @@ def flash_release(path=None, st_serial=None):
   status("5. Verifying version")
   panda = Panda(st_serial)
   my_version = panda.get_version()
-  print("dongle id: %s" % panda.get_serial()[0])
+  print(f"dongle id: {panda.get_serial()[0]}")
   print(my_version, "should be", version)
   assert(str(version) == str(my_version))
 

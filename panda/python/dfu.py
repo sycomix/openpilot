@@ -25,7 +25,7 @@ class PandaDFU(object):
           self._handle = device.open()
           self.legacy = "07*128Kg" in self._handle.getASCIIStringDescriptor(4)
           return
-    raise Exception("failed to open "+dfu_serial)
+    raise Exception(f"failed to open {dfu_serial}")
 
   @staticmethod
   def list():
@@ -44,7 +44,7 @@ class PandaDFU(object):
 
   @staticmethod
   def st_serial_to_dfu_serial(st):
-    if st == None or st == "none":
+    if st is None or st == "none":
       return None
     uid_base = struct.unpack("H"*6, st.decode("hex"))
     return struct.pack("!HHH", uid_base[1] + uid_base[5], uid_base[0] + uid_base[4] + 0xA, uid_base[3]).encode("hex").upper()
@@ -71,7 +71,7 @@ class PandaDFU(object):
     self.status()
 
   def program(self, address, dat, block_size=None):
-    if block_size == None:
+    if block_size is None:
       block_size = len(dat)
 
     # Set Address Pointer

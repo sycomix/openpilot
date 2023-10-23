@@ -64,10 +64,7 @@ def sympy_into_c(sympy_functions):
         # [1,1] is a hack for Matrices
         nargs.append(codegen.InputArgument(aa, dimensions=[1,1]))
     # add the output arguments
-    for a in r.arguments:
-      if type(a) == codegen.OutputArgument:
-        nargs.append(a)
-
+    nargs.extend(a for a in r.arguments if type(a) == codegen.OutputArgument)
     #assert len(r.arguments) == len(args)+1
     r.arguments = nargs
 

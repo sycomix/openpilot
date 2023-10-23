@@ -26,7 +26,7 @@ DEBUG = os.getenv("PANDADEBUG") is not None
 
 def build_st(target, mkfile="Makefile"):
   from panda import BASEDIR
-  cmd = 'cd %s && make -f %s clean && make -f %s %s >/dev/null' % (os.path.join(BASEDIR, "board"), mkfile, mkfile, target)
+  cmd = f'cd {os.path.join(BASEDIR, "board")} && make -f {mkfile} clean && make -f {mkfile} {target} >/dev/null'
   try:
     output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
   except subprocess.CalledProcessError as exception:
@@ -36,14 +36,11 @@ def build_st(target, mkfile="Makefile"):
 
 def parse_can_buffer(dat):
   ret = []
+  extended = 4
   for j in range(0, len(dat), 0x10):
     ddat = dat[j:j+0x10]
-    f1, f2 = struct.unpack("II", ddat[0:8])
-    extended = 4
-    if f1 & extended:
-      address = f1 >> 3
-    else:
-      address = f1 >> 21
+    f1, f2 = struct.unpack("II", ddat[:8])
+    address = f1 >> 3 if f1 & extended else f1 >> 21
     dddat = ddat[8:8+(f2&0xF)]
     if DEBUG:
       print("  R %x: %s" % (address, str(dddat).encode("hex")))
@@ -70,7 +67,7 @@ class PandaWifiStreaming(object):
         if addr == (self.ip, self.port):
           ret += parse_can_buffer(dat)
       except socket.error as e:
-        if e.errno != 35 and e.errno != 11:
+        if e.errno not in [35, 11]:
           traceback.print_exc()
         break
     return ret
@@ -82,7 +79,7 @@ class WifiHandle(object):
 
   def __recv(self):
     ret = self.sock.recv(0x44)
-    length = struct.unpack("I", ret[0:4])[0]
+    length = struct.unpack("I", ret[:4])[0]
     return ret[4:4+length]
 
   def controlWrite(self, request_type, request, value, index, data, timeout=0):
@@ -197,11 +194,10 @@ class Panda(object):
     try:
       if enter_bootloader:
         self._handle.controlWrite(Panda.REQUEST_IN, 0xd1, 0, 0, b'')
+      elif enter_bootstub:
+        self._handle.controlWrite(Panda.REQUEST_IN, 0xd1, 1, 0, b'')
       else:
-        if enter_bootstub:
-          self._handle.controlWrite(Panda.REQUEST_IN, 0xd1, 1, 0, b'')
-        else:
-          self._handle.controlWrite(Panda.REQUEST_IN, 0xd8, 0, 0, b'')
+        self._handle.controlWrite(Panda.REQUEST_IN, 0xd8, 0, 0, b'')
     except Exception:
       pass
     if not enter_bootloader:
@@ -257,7 +253,7 @@ class Panda(object):
       pass
 
   def flash(self, fn=None, code=None, reconnect=True):
-    print("flash: main version is " + self.get_version())
+    print(f"flash: main version is {self.get_version()}")
     if not self.bootstub:
       self.reset(enter_bootstub=True)
     assert(self.bootstub)
@@ -278,7 +274,7 @@ class Panda(object):
         code = f.read()
 
     # get version
-    print("flash: bootstub version is " + self.get_version())
+    print(f"flash: bootstub version is {self.get_version()}")
 
     # do flash
     Panda.flash_static(self._handle, code)
@@ -306,14 +302,17 @@ class Panda(object):
 
   @staticmethod
   def flash_ota_st():
-    ret = os.system("cd %s && make clean && make ota" % (os.path.join(BASEDIR, "board")))
+    ret = os.system(
+        f'cd {os.path.join(BASEDIR, "board")} && make clean && make ota')
     time.sleep(1)
     return ret==0
 
   @staticmethod
   def flash_ota_wifi(release=False):
     release_str = "RELEASE=1" if release else ""
-    ret = os.system("cd {} && make clean && {} make ota".format(os.path.join(BASEDIR, "boardesp"),release_str))
+    ret = os.system(
+        f'cd {os.path.join(BASEDIR, "boardesp")} && make clean && {release_str} make ota'
+    )
     time.sleep(1)
     return ret==0
 
@@ -361,7 +360,6 @@ class Panda(object):
       self._handle.controlWrite(Panda.REQUEST_OUT, 0xd1, 0, 0, b'')
     except Exception as e:
       print(e)
-      pass
 
   def get_version(self):
     return self._handle.controlRead(Panda.REQUEST_IN, 0xd6, 0, 0, 0x40)
@@ -380,9 +378,9 @@ class Panda(object):
 
   def get_serial(self):
     dat = self._handle.controlRead(Panda.REQUEST_IN, 0xd0, 0, 0, 0x20)
-    hashsig, calc_hash = dat[0x1c:], hashlib.sha1(dat[0:0x1c]).digest()[0:4]
+    hashsig, calc_hash = dat[0x1c:], hashlib.sha1(dat[:0x1c]).digest()[:4]
     assert(hashsig == calc_hash)
-    return [dat[0:0x10], dat[0x10:0x10+10]]
+    return [dat[:0x10], dat[0x10:0x10+10]]
 
   def get_secret(self):
     return self._handle.controlRead(Panda.REQUEST_IN, 0xd0, 1, 0, 0x10)
@@ -506,17 +504,19 @@ class Panda(object):
   def serial_read(self, port_number):
     ret = []
     while 1:
-      lret = bytes(self._handle.controlRead(Panda.REQUEST_IN, 0xe0, port_number, 0, 0x40))
-      if len(lret) == 0:
+      if lret := bytes(
+          self._handle.controlRead(Panda.REQUEST_IN, 0xE0, port_number, 0,
+                                   0x40)):
+        ret.append(lret)
+      else:
         break
-      ret.append(lret)
     return b''.join(ret)
 
   def serial_write(self, port_number, ln):
-    ret = 0
-    for i in range(0, len(ln), 0x20):
-      ret += self._handle.bulkWrite(2, struct.pack("B", port_number) + ln[i:i+0x20])
-    return ret
+    return sum(
+        self._handle.bulkWrite(2,
+                               struct.pack("B", port_number) + ln[i:i + 0x20])
+        for i in range(0, len(ln), 0x20))
 
   def serial_clear(self, port_number):
     """Clears all messages (tx and rx) from the specified internal uart
@@ -554,7 +554,7 @@ class Panda(object):
     echo = bytearray()
     while len(echo) != cnt:
       ret = str(self._handle.controlRead(Panda.REQUEST_OUT, 0xe0, bus, 0, cnt-len(echo)))
-      if DEBUG and len(ret) > 0:
+      if DEBUG and ret != "":
         print("kline recv: "+ret.encode("hex"))
       echo += ret
     return str(echo)

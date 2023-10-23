@@ -79,9 +79,7 @@ class PlainTextSocketAppender(threading.Thread):
                     dbg("Unable to connect to Logentries")
 
             root_delay *= 2
-            if(root_delay > MAX_DELAY):
-                root_delay = MAX_DELAY
-
+            root_delay = min(root_delay, MAX_DELAY)
             wait_for = root_delay + random.uniform(0, root_delay)
 
             try:

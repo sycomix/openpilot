@@ -12,7 +12,7 @@ class PandaSerial(object):
     if len(tt) > 0:
       #print "R: ", tt.encode("hex")
       self.buf += tt
-    ret = self.buf[0:l]
+    ret = self.buf[:l]
     self.buf = self.buf[l:]
     return ret
 

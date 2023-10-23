@@ -52,15 +52,9 @@ class Info():
       next(reader, None)  # skip the CSV header
       for row in reader:
         bus = row[0]
-        if row[1].startswith('0x'):
-          message_id = row[1][2:]  # remove leading '0x'
-        else:
-          message_id = hex(int(row[1]))[2:]  # old message IDs are in decimal
-        message_id = '%s:%s' % (bus, message_id)
-        if row[1].startswith('0x'):
-          data = row[2][2:]  # remove leading '0x'
-        else:
-          data = row[2]
+        message_id = row[1][2:] if row[1].startswith('0x') else hex(int(row[1]))[2:]
+        message_id = f'{bus}:{message_id}'
+        data = row[2][2:] if row[1].startswith('0x') else row[2]
         if message_id not in self.messages:
           self.messages[message_id] = Message(message_id)
         message = self.messages[message_id]

@@ -44,7 +44,7 @@ def sync_reset(s):
     res = b''
     while not res.endswith("ELM327 v1.5\r\r>"):
         res += read_or_fail(s)
-        print("Reset response is '%s'" % repr(res))
+        print(f"Reset response is '{repr(res)}'")
 
 def test_reset():
     s = socket.create_connection(("192.168.0.10", 35000))
@@ -544,13 +544,33 @@ def test_elm_send_can_multiline_msg_throughput():
         send_compare(s, b'ATH1\r', b'OK\r\r>') # Headers ON
 
         rows = 584
-        send_compare(s, b'09ff\r', # headers ON, Spaces OFF
-                     ("7E8" + "1" + hex((rows*7)+6)[2:].upper().zfill(3) + "49FF01"+"AA0000\r" +
-                      "".join(
-                          ("7E82"+hex((num+1)%0x10)[2:].upper()+("AA"*5) +
-                           hex(num+1)[2:].upper().zfill(4) + "\r" for num in range(rows))
-                      ) + "\r>").encode(),
-                     timeout=10
+        send_compare(
+            s,
+            b'09ff\r',
+            (
+                (
+                    (
+                        "7E8"
+                        + "1"
+                        + hex((rows * 7) + 6)[2:].upper().zfill(3)
+                        + "49FF01"
+                        + "AA0000\r"
+                        + "".join(
+                            (
+                                (
+                                    f"7E82{hex((num + 1) % 16)[2:].upper()}"
+                                    + "AA" * 5
+                                    + hex(num + 1)[2:].upper().zfill(4)
+                                )
+                                + "\r"
+                            )
+                            for num in range(rows)
+                        )
+                    )
+                    + "\r>"
+                )
+            ).encode(),
+            timeout=10,
         )
     finally:
         sim.stop()

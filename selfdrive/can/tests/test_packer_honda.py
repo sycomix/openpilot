@@ -14,9 +14,9 @@ class TestPackerMethods(unittest.TestCase):
     self.honda_cp = CANPacker("honda_pilot_touring_2017_can_generated")
 
   def test_correctness(self):
+    is_panda_black = False
     # Test all commands, randomize the params.
     for _ in xrange(1000):
-      is_panda_black = False
       car_fingerprint = HONDA_BOSCH[0]
 
       apply_brake = (random.randint(0, 2) % 2 == 0)

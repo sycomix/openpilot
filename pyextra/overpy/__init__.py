@@ -123,7 +123,7 @@ class Overpass(object):
 
         retry_num = 0
         retry_exceptions = []
-        do_retry = True if self.max_retry_count > 0 else False
+        do_retry = self.max_retry_count > 0
         while retry_num <= self.max_retry_count:
             if retry_num > 0:
                 time.sleep(self.retry_timeout)
@@ -232,8 +232,7 @@ class Overpass(object):
             # Python 2.x: Convert unicode strings
             data = data.encode(encoding)
 
-        m = re.compile("<remark>(?P<msg>[^<>]*)</remark>").search(data)
-        if m:
+        if m := re.compile("<remark>(?P<msg>[^<>]*)</remark>").search(data):
             self._handle_remark_msg(m.group("msg"))
 
         return Result.from_xml(data, api=self, parser=parser)
@@ -307,8 +306,7 @@ class Result(object):
             except KeyError:
                 result = []
         else:
-            for e in self._class_collection_map[filter_cls].values():
-                result.append(e)
+            result.extend(iter(self._class_collection_map[filter_cls].values()))
         return result
 
     def get_ids(self, filter_cls):
@@ -372,11 +370,7 @@ class Result(object):
         :rtype: Result
         """
         if parser is None:
-            if isinstance(data, str):
-                parser = XML_PARSER_SAX
-            else:
-                parser = XML_PARSER_DOM
-
+            parser = XML_PARSER_SAX if isinstance(data, str) else XML_PARSER_DOM
         result = cls(api=api)
         if parser == XML_PARSER_DOM:
             import xml.etree.ElementTree as ET
@@ -673,7 +667,7 @@ class Area(Element):
         self.id = area_id
 
     def __repr__(self):
-        return "<overpy.Area id={}>".format(self.id)
+        return f"<overpy.Area id={self.id}>"
 
     @classmethod
     def from_json(cls, data, result=None):
@@ -776,7 +770,7 @@ class Node(Element):
         self.lon = lon
 
     def __repr__(self):
-        return "<overpy.Node id={} lat={} lon={}>".format(self.id, self.lat, self.lon)
+        return f"<overpy.Node id={self.id} lat={self.lat} lon={self.lon}>"
 
     @classmethod
     def from_json(cls, data, result=None):
@@ -891,7 +885,7 @@ class Way(Element):
         self.center_lon = center_lon
 
     def __repr__(self):
-        return "<overpy.Way id={} nodes={}>".format(self.id, self._node_ids)
+        return f"<overpy.Way id={self.id} nodes={self._node_ids}>"
 
     @property
     def nodes(self):
@@ -1080,7 +1074,7 @@ class Relation(Element):
         self.center_lon = center_lon
 
     def __repr__(self):
-        return "<overpy.Relation id={}>".format(self.id)
+        return f"<overpy.Relation id={self.id}>"
 
     @classmethod
     def from_json(cls, data, result=None):
@@ -1111,15 +1105,11 @@ class Relation(Element):
         supported_members = [RelationNode, RelationWay, RelationRelation]
         for member in data.get("members", []):
             type_value = member.get("type")
-            for member_cls in supported_members:
-                if member_cls._type_value == type_value:
-                    members.append(
-                        member_cls.from_json(
-                            member,
-                            result=result
-                        )
-                    )
-
+            members.extend(
+                member_cls.from_json(member, result=result)
+                for member_cls in supported_members
+                if member_cls._type_value == type_value
+            )
         attributes = {}
         ignore = ["id", "members", "tags", "type"]
         for n, v in data.items():
@@ -1172,14 +1162,11 @@ class Relation(Element):
                 tags[name] = value
             if sub_child.tag.lower() == "member":
                 type_value = sub_child.attrib.get("type")
-                for member_cls in supported_members:
-                    if member_cls._type_value == type_value:
-                        members.append(
-                            member_cls.from_xml(
-                                sub_child,
-                                result=result
-                            )
-                        )
+                members.extend(
+                    member_cls.from_xml(sub_child, result=result)
+                    for member_cls in supported_members
+                    if member_cls._type_value == type_value
+                )
             if sub_child.tag.lower() == "center":
                 (center_lat, center_lon) = cls.get_center_from_xml_dom(sub_child=sub_child)
 
@@ -1256,14 +1243,10 @@ class RelationMember(object):
         geometry = data.get("geometry")
         if isinstance(geometry, list):
             geometry_orig = geometry
-            geometry = []
-            for v in geometry_orig:
-                geometry.append(
-                    RelationWayGeometryValue(
-                        lat=v.get("lat"),
-                        lon=v.get("lon")
-                    )
-                )
+            geometry = [
+                RelationWayGeometryValue(lat=v.get("lat"), lon=v.get("lon"))
+                for v in geometry_orig
+            ]
         else:
             geometry = None
 
@@ -1334,7 +1317,7 @@ class RelationNode(RelationMember):
         return self._result.get_node(self.ref, resolve_missing=resolve_missing)
 
     def __repr__(self):
-        return "<overpy.RelationNode ref={} role={}>".format(self.ref, self.role)
+        return f"<overpy.RelationNode ref={self.ref} role={self.role}>"
 
 
 class RelationWay(RelationMember):
@@ -1344,7 +1327,7 @@ class RelationWay(RelationMember):
         return self._result.get_way(self.ref, resolve_missing=resolve_missing)
 
     def __repr__(self):
-        return "<overpy.RelationWay ref={} role={}>".format(self.ref, self.role)
+        return f"<overpy.RelationWay ref={self.ref} role={self.role}>"
 
 
 class RelationWayGeometryValue(object):
@@ -1353,7 +1336,7 @@ class RelationWayGeometryValue(object):
         self.lon = lon
 
     def __repr__(self):
-        return "<overpy.RelationWayGeometryValue lat={} lon={}>".format(self.lat, self.lon)
+        return f"<overpy.RelationWayGeometryValue lat={self.lat} lon={self.lon}>"
 
 
 class RelationRelation(RelationMember):
@@ -1363,7 +1346,7 @@ class RelationRelation(RelationMember):
         return self._result.get_relation(self.ref, resolve_missing=resolve_missing)
 
     def __repr__(self):
-        return "<overpy.RelationRelation ref={} role={}>".format(self.ref, self.role)
+        return f"<overpy.RelationRelation ref={self.ref} role={self.role}>"
 
 
 class RelationArea(RelationMember):
@@ -1373,7 +1356,7 @@ class RelationArea(RelationMember):
         return self._result.get_area(self.ref, resolve_missing=resolve_missing)
 
     def __repr__(self):
-        return "<overpy.RelationArea ref={} role={}>".format(self.ref, self.role)
+        return f"<overpy.RelationArea ref={self.ref} role={self.role}>"
 
 
 class OSMSAXHandler(handler.ContentHandler):
@@ -1408,9 +1391,9 @@ class OSMSAXHandler(handler.ContentHandler):
         if name in self.ignore_start:
             return
         try:
-            handler = getattr(self, '_handle_start_%s' % name)
+            handler = getattr(self, f'_handle_start_{name}')
         except AttributeError:
-            raise KeyError("Unknown element start '%s'" % name)
+            raise KeyError(f"Unknown element start '{name}'")
         handler(attrs)
 
     def endElement(self, name):
@@ -1423,9 +1406,9 @@ class OSMSAXHandler(handler.ContentHandler):
         if name in self.ignore_end:
             return
         try:
-            handler = getattr(self, '_handle_end_%s' % name)
+            handler = getattr(self, f'_handle_end_{name}')
         except AttributeError:
-            raise KeyError("Unknown element end '%s'" % name)
+            raise KeyError(f"Unknown element end '{name}'")
         handler()
 
     def _handle_start_center(self, attrs):
@@ -1610,7 +1593,7 @@ class OSMSAXHandler(handler.ContentHandler):
         }
         cls = cls_map.get(attrs["type"])
         if cls is None:
-            raise ValueError("Undefined type for member: '%s'" % attrs['type'])
+            raise ValueError(f"Undefined type for member: '{attrs['type']}'")
 
         self.cur_relation_member = cls(**params)
         self._curr['members'].append(self.cur_relation_member)

@@ -7,10 +7,11 @@ def get_fingerprint_list():
   # - values are lists dicts of messages that constitute the unique
   #   CAN fingerprint of each car model and all its variants
   fingerprints = {}
-  for car_folder in [x[0] for x in os.walk(BASEDIR + '/selfdrive/car')]:
+  for car_folder in [x[0] for x in os.walk(f'{BASEDIR}/selfdrive/car')]:
     try:
       car_name = car_folder.split('/')[-1]
-      values = __import__('selfdrive.car.%s.values' % car_name, fromlist=['FINGERPRINTS'])
+      values = __import__(f'selfdrive.car.{car_name}.values',
+                          fromlist=['FINGERPRINTS'])
       if hasattr(values, 'FINGERPRINTS'):
         car_fingerprints = values.FINGERPRINTS
       else:

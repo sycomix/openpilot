@@ -171,5 +171,5 @@ if __name__ == "__main__":
     while True:
       run_test(sleep_duration=args.sleep)
   else:
-    for i in range(args.n):
+    for _ in range(args.n):
       run_test(sleep_duration=args.sleep)

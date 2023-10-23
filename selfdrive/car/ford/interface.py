@@ -136,7 +136,7 @@ class CarInterface(object):
     ret.brakePressed = self.CS.brake_pressed
     ret.brakeLights = self.CS.brake_lights
 
-    ret.cruiseState.enabled = not (self.CS.pcm_acc_status in [0, 3])
+    ret.cruiseState.enabled = self.CS.pcm_acc_status not in [0, 3]
     ret.cruiseState.speed = self.CS.v_cruise_pcm
     ret.cruiseState.available = self.CS.pcm_acc_status != 0
 
@@ -156,7 +156,7 @@ class CarInterface(object):
 
     # disable on pedals rising edge or when brake is pressed and speed isn't zero
     if (ret.gasPressed and not self.gas_pressed_prev) or \
-       (ret.brakePressed and (not self.brake_pressed_prev or ret.vEgo > 0.001)):
+         (ret.brakePressed and (not self.brake_pressed_prev or ret.vEgo > 0.001)):
       events.append(create_event('pedalPressed', [ET.NO_ENTRY, ET.USER_DISABLE]))
 
     if ret.gasPressed:

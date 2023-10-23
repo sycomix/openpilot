@@ -29,9 +29,8 @@ def parse_service_call(call):
     return None
   try:
     def fh(x):
-      if len(x) != 8:
-        return []
-      return [x[6:8], x[4:6], x[2:4], x[0:2]]
+      return [] if len(x) != 8 else [x[6:8], x[4:6], x[2:4], x[:2]]
+
     hd = []
     for x in ret.split("\n")[1:]:
       for k in map(fh, x.split(": ")[1].split(" '")[0].split(" ")):
@@ -45,9 +44,7 @@ def get_subscriber_info():
   ret = parse_service_call(["service", "call", "iphonesubinfo", "7"])
   if ret is None or len(ret) < 8:
     return ""
-  if struct.unpack("I", ret[4:8]) == -1:
-    return ""
-  return ret[8:-2:2]
+  return "" if struct.unpack("I", ret[4:8]) == -1 else ret[8:-2:2]
 
 
 def register():

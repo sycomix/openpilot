@@ -50,9 +50,9 @@ def test_recv_only(serials=None):
   p.set_can_loopback(True)
   pwifi = Panda("WIFI")
 
+  speed = 500
   # TODO: msg_count=1000 drops packets, is this fixable?
   for msg_count in [10,100,200]:
-    speed = 500
     p.set_can_speed_kbps(0, speed)
     comp_kbps = time_many_sends(p, 0, pwifi, msg_count)
     saturation_pct = (comp_kbps/speed) * 100.0

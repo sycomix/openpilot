@@ -23,7 +23,7 @@ def get_startup_alert(car_recognized, controller_available):
   alert = 'startup'
   if not car_recognized:
     alert = 'startupNoCar'
-  elif car_recognized and not controller_available:
+  elif not controller_available:
     alert = 'startupNoControl'
   return alert
 
@@ -31,10 +31,13 @@ def get_startup_alert(car_recognized, controller_available):
 def load_interfaces(brand_names):
   ret = {}
   for brand_name in brand_names:
-    path = ('selfdrive.car.%s' % brand_name)
-    CarInterface = __import__(path + '.interface', fromlist=['CarInterface']).CarInterface
-    if os.path.exists(BASEDIR + '/' + path.replace('.', '/') + '/carcontroller.py'):
-      CarController = __import__(path + '.carcontroller', fromlist=['CarController']).CarController
+    path = f'selfdrive.car.{brand_name}'
+    CarInterface = __import__(f'{path}.interface',
+                              fromlist=['CarInterface']).CarInterface
+    if os.path.exists(f'{BASEDIR}/' + path.replace('.', '/') +
+                      '/carcontroller.py'):
+      CarController = __import__(f'{path}.carcontroller',
+                                 fromlist=['CarController']).CarController
     else:
       CarController = None
     for model_name in brand_names[brand_name]:
@@ -47,10 +50,11 @@ def _get_interface_names():
   # - keys are all the car names that which we have an interface for
   # - values are lists of spefic car models for a given car
   brand_names = {}
-  for car_folder in [x[0] for x in os.walk(BASEDIR + '/selfdrive/car')]:
+  for car_folder in [x[0] for x in os.walk(f'{BASEDIR}/selfdrive/car')]:
     try:
       brand_name = car_folder.split('/')[-1]
-      model_names = __import__('selfdrive.car.%s.values' % brand_name, fromlist=['CAR']).CAR
+      model_names = __import__(f'selfdrive.car.{brand_name}.values',
+                               fromlist=['CAR']).CAR
       model_names = [getattr(model_names, c) for c in model_names.__dict__.keys() if not c.startswith("__")]
       brand_names[brand_name] = model_names
     except (ImportError, IOError):
@@ -117,8 +121,8 @@ def fingerprint(logcan, sendcan, is_panda_black):
       # Toyota needs higher time to fingerprint, since DSU does not broadcast immediately
       if only_toyota_left(candidate_cars[b]):
         frame_fingerprint = 100  # 1s
-      if len(candidate_cars[b]) == 1:
-        if frame > frame_fingerprint:
+      if frame > frame_fingerprint:
+        if len(candidate_cars[b]) == 1:
           # fingerprint done
           car_fingerprint = candidate_cars[b][0]
 

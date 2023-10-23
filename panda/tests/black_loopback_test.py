@@ -76,7 +76,7 @@ def test_buses(send_panda, recv_panda, test_array, sleep_duration):
     send_panda.send_heartbeat()
     recv_panda.send_heartbeat()
     print("\nSend bus:", send_bus, " Send OBD:", send_obd, " Recv OBD:", recv_obd)
-    
+
     # set OBD on pandas
     send_panda.set_gmlan(True if send_obd else None)
     recv_panda.set_gmlan(True if recv_obd else None)
@@ -90,7 +90,7 @@ def test_buses(send_panda, recv_panda, test_array, sleep_duration):
 
     # send the characters
     at = random.randint(1, 2000)
-    st = get_test_string()[0:8]
+    st = get_test_string()[:8]
     send_panda.can_send(at, st, send_bus)
     time.sleep(0.1)
 
@@ -100,11 +100,11 @@ def test_buses(send_panda, recv_panda, test_array, sleep_duration):
 
     loop_buses = []
     for loop in cans_loop:
-      print("  Loop on bus", str(loop[3]))
+      print("  Loop on bus", loop[3])
       loop_buses.append(loop[3])
     if len(cans_loop) == 0:
       print("  No loop")
-    
+
     # test loop buses
     recv_buses.sort()
     loop_buses.sort()
@@ -124,5 +124,5 @@ if __name__ == "__main__":
     while True:
       run_test(sleep_duration=args.sleep)
   else:
-    for i in range(args.n):
+    for _ in range(args.n):
       run_test(sleep_duration=args.sleep)

@@ -18,16 +18,10 @@ MAX_TORQUE_ERROR = 350
 INTERCEPTOR_THRESHOLD = 475
 
 def twos_comp(val, bits):
-  if val >= 0:
-    return val
-  else:
-    return (2**bits) + val
+  return val if val >= 0 else (2**bits) + val
 
 def sign(a):
-  if a > 0:
-    return 1
-  else:
-    return -1
+  return 1 if a > 0 else -1
 
 class TestToyotaSafety(unittest.TestCase):
   @classmethod
@@ -184,17 +178,14 @@ class TestToyotaSafety(unittest.TestCase):
   def test_torque_absolute_limits(self):
     for controls_allowed in [True, False]:
       for torque in np.arange(-MAX_TORQUE - 1000, MAX_TORQUE + 1000, MAX_RATE_UP):
-          self.safety.set_controls_allowed(controls_allowed)
-          self.safety.set_toyota_rt_torque_last(torque)
-          self.safety.set_toyota_torque_meas(torque, torque)
-          self.safety.set_toyota_desired_torque_last(torque - MAX_RATE_UP)
+        self.safety.set_controls_allowed(controls_allowed)
+        self.safety.set_toyota_rt_torque_last(torque)
+        self.safety.set_toyota_torque_meas(torque, torque)
+        self.safety.set_toyota_desired_torque_last(torque - MAX_RATE_UP)
 
-          if controls_allowed:
-            send = (-MAX_TORQUE <= torque <= MAX_TORQUE)
-          else:
-            send = torque == 0
-
-          self.assertEqual(send, self.safety.safety_tx_hook(self._torque_msg(torque)))
+        send = ((-MAX_TORQUE <= torque <= MAX_TORQUE)
+                if controls_allowed else torque == 0)
+        self.assertEqual(send, self.safety.safety_tx_hook(self._torque_msg(torque)))
 
   def test_non_realtime_limit_up(self):
     self.safety.set_controls_allowed(True)
@@ -295,16 +286,12 @@ class TestToyotaSafety(unittest.TestCase):
           blocked_msgs += [0x343]
         for b in buss:
           for m in msgs:
-            if tcf:
-              if b == 0:
-                fwd_bus = 2
-              elif b == 1:
-                fwd_bus = -1
-              elif b == 2:
-                fwd_bus = -1 if m in blocked_msgs else 0
-            else:
+            if tcf and b == 0:
+              fwd_bus = 2
+            elif tcf and b == 1 or not tcf:
               fwd_bus = -1
-
+            elif b == 2:
+              fwd_bus = -1 if m in blocked_msgs else 0
             # assume len 8
             self.assertEqual(fwd_bus, self.safety.safety_fwd_hook(b, self._send_msg(b, m, 8)))
 

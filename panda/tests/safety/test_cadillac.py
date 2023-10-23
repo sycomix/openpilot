@@ -16,16 +16,10 @@ DRIVER_TORQUE_FACTOR = 4;
 IPAS_OVERRIDE_THRESHOLD = 200
 
 def twos_comp(val, bits):
-  if val >= 0:
-    return val
-  else:
-    return (2**bits) + val
+  return val if val >= 0 else (2**bits) + val
 
 def sign(a):
-  if a > 0:
-    return 1
-  else:
-    return -1
+  return 1 if a > 0 else -1
 
 class TestCadillacSafety(unittest.TestCase):
   @classmethod
@@ -96,11 +90,8 @@ class TestCadillacSafety(unittest.TestCase):
         self.safety.set_cadillac_torque_driver(0, 0)
         self.safety.set_cadillac_desired_torque_last(torque - MAX_RATE_UP)
 
-        if controls_allowed:
-          send = (-MAX_TORQUE <= torque <= MAX_TORQUE)
-        else:
-          send = torque == 0
-
+        send = ((-MAX_TORQUE <= torque <= MAX_TORQUE)
+                if controls_allowed else torque == 0)
         self.assertEqual(send, self.safety.safety_tx_hook(self._torque_msg(torque)))
 
   def test_non_realtime_limit_up(self):

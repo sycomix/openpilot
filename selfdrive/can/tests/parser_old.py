@@ -48,7 +48,7 @@ class CANParser(object):
         c = (self.msg_name_to_addres[c[0]], c[1])
         checks[i] = c
 
-    sig_names = dict((name, ffi.new("char[]", name)) for name, _, _ in signals)
+    sig_names = {name: ffi.new("char[]", name) for name, _, _ in signals}
 
     signal_options_c = ffi.new("SignalParseOptions[]", [
       {
@@ -57,7 +57,7 @@ class CANParser(object):
         'default_value': sig_default,
       } for sig_name, sig_address, sig_default in signals])
 
-    message_options = dict((address, 0) for _, address, _ in signals)
+    message_options = {address: 0 for _, address, _ in signals}
     message_options.update(dict(checks))
 
     message_options_c = ffi.new("MessageParseOptions[]", [
@@ -102,7 +102,7 @@ class CANParser(object):
   def update(self, sec, wait):
     """Returns if the update was successfull (e.g. no rcv timeout happened)"""
     r = libdbc.can_update(self.can, sec, wait)
-    return bool(r >= 0), self.update_vl(sec)
+    return r >= 0, self.update_vl(sec)
 
 
 if __name__ == "__main__":

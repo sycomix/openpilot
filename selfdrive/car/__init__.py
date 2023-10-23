@@ -83,7 +83,7 @@ def crc8_pedal(data):
   size = len(data)
   for i in range(size-1, -1, -1):
     crc ^= data[i]
-    for j in range(8):
+    for _ in range(8):
       if ((crc & 0x80) != 0):
         crc = ((crc << 1) ^ poly) & 0xFF
       else:

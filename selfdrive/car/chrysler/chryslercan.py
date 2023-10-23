@@ -18,9 +18,7 @@ def calc_checksum(data):
   for index in range(0, end_index):
     shift = 0x80
     curr = data[index]
-    iterate = 8
-    while(iterate > 0):
-      iterate -= 1
+    for _ in range(8, 0, -1):
       bit_sum = curr & shift
       temp_chk = checksum & 0x80
       if (bit_sum != 0):
@@ -53,10 +51,7 @@ def create_lkas_hud(packer, gear, lkas_active, hud_alert, hud_count, lkas_car_mo
 
   color = 1  # default values are for park or neutral in 2017 are 0 0, but trying 1 1 for 2019
   lines = 1
-  alerts = 0
-
-  if hud_count < (1 *4):  # first 3 seconds, 4Hz
-    alerts = 1
+  alerts = 1 if hud_count < (1 *4) else 0
   # CAR.PACIFICA_2018_HYBRID and CAR.PACIFICA_2019_HYBRID
   # had color = 1 and lines = 1 but trying 2017 hybrid style for now.
   if gear in ('drive', 'reverse', 'low'):

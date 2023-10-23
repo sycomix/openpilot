@@ -18,15 +18,10 @@ def is_vin_response_valid(can_dat, step, cnt):
     if can_dat[0] != 0x10 or can_dat[1] != 0x14:
        return False
 
-  if step == 1 and cnt == 0:
-    # first response after a CONTINUE query is sent
-    if can_dat[0] != 0x21:
-       return False
-
-  if step == 1 and cnt == 1:
-    # second response after a CONTINUE query is sent
-    if can_dat[0] != 0x22:
-       return False
+  elif step == 1:
+    if (cnt == 0 and can_dat[0] != 0x21
+        or cnt != 0 and cnt == 1 and can_dat[0] != 0x22):
+      return False
 
   return True
 

@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 import time
 from panda import Panda
-	
+
 if __name__ == "__main__":
   panda_serials = Panda.list()
-  pandas = []
-  for ps in panda_serials:
-    pandas.append(Panda(serial=ps))
-  if len(pandas) == 0:
+  pandas = [Panda(serial=ps) for ps in panda_serials]
+  if not pandas:
     print("No pandas connected")
     assert False
 

@@ -28,7 +28,7 @@ def can_printer():
         msgs[address].append(dat)
 
     if sec_since_boot() - lp > 0.1:
-      dd = chr(27) + "[2J"
+      dd = f"{chr(27)}[2J"
       dd += "%5.2f\n" % (sec_since_boot() - start)
       for k,v in sorted(zip(msgs.keys(), map(lambda x: binascii.hexlify(x[-1]), msgs.values()))):
         dd += "%s(%6d) %s\n" % ("%04X(%4d)" % (k,k),len(msgs[k]), v)

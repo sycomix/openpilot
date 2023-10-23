@@ -14,16 +14,10 @@ DRIVER_TORQUE_ALLOWANCE = 50;
 DRIVER_TORQUE_FACTOR = 2;
 
 def twos_comp(val, bits):
-  if val >= 0:
-    return val
-  else:
-    return (2**bits) + val
+  return val if val >= 0 else (2**bits) + val
 
 def sign(a):
-  if a > 0:
-    return 1
-  else:
-    return -1
+  return 1 if a > 0 else -1
 
 class TestHyundaiSafety(unittest.TestCase):
   @classmethod
@@ -200,16 +194,12 @@ class TestHyundaiSafety(unittest.TestCase):
       blocked_msgs = [832]
       for b in buss:
         for m in msgs:
-          if hgs:
-            if b == 0:
-              fwd_bus = 2
-            elif b == 1:
-              fwd_bus = -1
-            elif b == 2:
-              fwd_bus = -1 if m in blocked_msgs else 0
-          else:
+          if hgs and b == 0:
+            fwd_bus = 2
+          elif hgs and b == 1 or not hgs:
             fwd_bus = -1
-
+          elif b == 2:
+            fwd_bus = -1 if m in blocked_msgs else 0
           # assume len 8
           self.assertEqual(fwd_bus, self.safety.safety_fwd_hook(b, self._send_msg(b, m, 8)))
 

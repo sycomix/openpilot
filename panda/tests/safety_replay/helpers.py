@@ -27,8 +27,8 @@ def to_signed(d, bits):
 
 def is_steering_msg(mode, addr):
   ret = False
-  if mode == safety_modes["HONDA"] or mode == safety_modes["HONDA_BOSCH"]:
-    ret = (addr == 0xE4) or (addr == 0x194) or (addr == 0x33D)
+  if mode in [safety_modes["HONDA"], safety_modes["HONDA_BOSCH"]]:
+    ret = addr in [0xE4, 0x194, 0x33D]
   elif mode == safety_modes["TOYOTA"]:
     ret = addr == 0x2E4
   elif mode == safety_modes["GM"]:
@@ -43,7 +43,7 @@ def is_steering_msg(mode, addr):
 
 def get_steer_torque(mode, to_send):
   ret = 0
-  if mode == safety_modes["HONDA"] or mode == safety_modes["HONDA_BOSCH"]:
+  if mode in [safety_modes["HONDA"], safety_modes["HONDA_BOSCH"]]:
     ret = to_send.RDLR & 0xFFFF0000
   elif mode == safety_modes["TOYOTA"]:
     ret = (to_send.RDLR & 0xFF00) | ((to_send.RDLR >> 16) & 0xFF)
@@ -61,7 +61,7 @@ def get_steer_torque(mode, to_send):
   return ret
 
 def set_desired_torque_last(safety, mode, torque):
-  if mode == safety_modes["HONDA"] or mode == safety_modes["HONDA_BOSCH"]:
+  if mode in [safety_modes["HONDA"], safety_modes["HONDA_BOSCH"]]:
     pass # honda safety mode doesn't enforce a rate on steering msgs
   elif mode == safety_modes["TOYOTA"]:
     safety.set_toyota_desired_torque_last(torque)

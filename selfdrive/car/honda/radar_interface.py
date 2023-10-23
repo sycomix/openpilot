@@ -72,9 +72,8 @@ class RadarInterface(object):
         self.pts[ii].aRel = float('nan')
         self.pts[ii].yvRel = float('nan')
         self.pts[ii].measured = True
-      else:
-        if ii in self.pts:
-          del self.pts[ii]
+      elif ii in self.pts:
+        del self.pts[ii]
 
     errors = []
     if not self.rcp.can_valid:

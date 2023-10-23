@@ -15,8 +15,7 @@ def can_cksum(mm):
 
 
 def fix(msg, addr):
-  msg2 = msg[0:-1] + chr(ord(msg[-1]) | can_cksum(struct.pack("I", addr)+msg))
-  return msg2
+  return msg[:-1] + chr(ord(msg[-1]) | can_cksum(struct.pack("I", addr)+msg))
 
 
 def get_pt_bus(car_fingerprint, is_panda_black):

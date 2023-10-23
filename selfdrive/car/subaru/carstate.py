@@ -110,7 +110,7 @@ class CarState(object):
     self.brake_pressure = cp.vl["Brake_Pedal"]['Brake_Pedal']
     self.user_gas_pressed = self.pedal_gas > 0
     self.brake_pressed = self.brake_pressure > 0
-    self.brake_lights = bool(self.brake_pressed)
+    self.brake_lights = self.brake_pressed
 
     self.v_wheel_fl = cp.vl["Wheel_Speeds"]['FL'] * CV.KPH_TO_MS
     self.v_wheel_fr = cp.vl["Wheel_Speeds"]['FR'] * CV.KPH_TO_MS

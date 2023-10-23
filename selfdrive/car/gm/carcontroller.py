@@ -62,11 +62,7 @@ def actuator_hystereses(final_pedal, pedal_steady):
   return final_pedal, pedal_steady
 
 def process_hud_alert(hud_alert):
-  # initialize to no alert
-  steer = 0
-  if hud_alert == VisualAlert.steerRequired:
-    steer = 1
-  return steer
+  return 1 if hud_alert == VisualAlert.steerRequired else 0
 
 class CarController(object):
   def __init__(self, canbus, car_fingerprint):

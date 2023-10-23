@@ -19,12 +19,12 @@ def test_udp_doesnt_drop(serials=None):
     if len(pwifi.can_recv()) == 0:
       break
 
+  speed = 500
   for msg_count in [1, 100]:
     saturation_pcts = []
     for i in range({1: 0x80, 100: 0x20}[msg_count]):
       pwifi.kick()
 
-      speed = 500
       p.set_can_speed_kbps(0, speed)
       comp_kbps = time_many_sends(p, 0, pwifi, msg_count=msg_count, msg_id=0x100+i)
       saturation_pct = (comp_kbps/speed) * 100.0
@@ -37,7 +37,7 @@ def test_udp_doesnt_drop(serials=None):
         assert_greater(saturation_pct, 20) #sometimes the wifi can be slow...
         assert_less(saturation_pct, 100)
         saturation_pcts.append(saturation_pct)
-    if len(saturation_pcts) > 0:
+    if saturation_pcts:
       assert_greater(sum(saturation_pcts)/len(saturation_pcts), 60)
 
   time.sleep(5)
@@ -52,7 +52,7 @@ def test_udp_doesnt_drop(serials=None):
     time.sleep(0.01)
     r = [1]
     missing = True
-    while len(r) > 0:
+    while r:
       r = p.can_recv()
       r = filter(lambda x: x[3] == bus and x[0] == msg_id, r)
       if len(r) > 0:
@@ -62,5 +62,7 @@ def test_udp_doesnt_drop(serials=None):
         last_missing_msg = time.time()
   et = time.time() - st
   last_missing_msg = last_missing_msg - st
-  print("waited {} for panda to recv can on usb, {} msgs, last missing at {}".format(et, usb_ok_cnt, last_missing_msg))
+  print(
+      f"waited {et} for panda to recv can on usb, {usb_ok_cnt} msgs, last missing at {last_missing_msg}"
+  )
   assert usb_ok_cnt >= REQ_USB_OK_CNT, "Unable to recv can on USB after UDP"

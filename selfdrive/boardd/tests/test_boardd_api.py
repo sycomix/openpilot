@@ -12,7 +12,7 @@ import unittest
 def generate_random_can_data_list():
   can_list = []
   cnt = random.randint(1, 64)
-  for j in xrange(cnt):
+  for _ in xrange(cnt):
     can_data = np.random.bytes(random.randint(1, 8))
     can_list.append([random.randint(0, 128), random.randint(0, 128), can_data, random.randint(0, 128)])
   return can_list, cnt
@@ -57,14 +57,14 @@ class TestBoarddApiMethods(unittest.TestCase):
     recursions = 1000
 
     n1 = sec_since_boot()
-    for i in xrange(recursions):
+    for _ in xrange(recursions):
       boardd_old.can_list_to_can_capnp(can_list, 'sendcan').to_bytes()
     n2 = sec_since_boot()
     elapsed_old = n2 - n1
 
     # print('Old API, elapsed time: {} secs'.format(elapsed_old))
     n1 = sec_since_boot()
-    for i in xrange(recursions):
+    for _ in xrange(recursions):
       boardd.can_list_to_can_capnp(can_list)
     n2 = sec_since_boot()
     elapsed_new = n2 - n1

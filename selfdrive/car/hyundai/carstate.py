@@ -180,7 +180,7 @@ class CarState(object):
     is_set_speed_in_mph = int(cp.vl["CLU11"]["CF_Clu_SPEED_UNIT"])
     speed_conv = CV.MPH_TO_MS if is_set_speed_in_mph else CV.KPH_TO_MS
     self.cruise_set_speed = cp.vl["SCC11"]['VSetDis'] * speed_conv
-    self.standstill = not v_wheel > 0.1
+    self.standstill = v_wheel <= 0.1
 
     self.angle_steers = cp.vl["SAS11"]['SAS_Angle']
     self.angle_steers_rate = cp.vl["SAS11"]['SAS_Speed']
@@ -210,12 +210,12 @@ class CarState(object):
 
     # Gear Selecton - This is not compatible with all Kia/Hyundai's, But is the best way for those it is compatible with
     gear = cp.vl["LVR12"]["CF_Lvr_Gear"]
-    if gear == 5:
+    if gear == 0:
+      self.gear_shifter = "park"
+    elif gear == 5:
       self.gear_shifter = "drive"
     elif gear == 6:
       self.gear_shifter = "neutral"
-    elif gear == 0:
-      self.gear_shifter = "park"
     elif gear == 7:
       self.gear_shifter = "reverse"
     else:

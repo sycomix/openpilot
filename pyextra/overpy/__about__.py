@@ -19,4 +19,4 @@ __author__ = "PhiBo (DinoTools)"
 __email__ = ""
 
 __license__ = "MIT"
-__copyright__ = "Copyright 2014-2016 %s" % __author__
+__copyright__ = f"Copyright 2014-2016 {__author__}"

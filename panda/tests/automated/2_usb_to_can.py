@@ -15,11 +15,7 @@ def test_can_loopback(p):
   # enable CAN loopback mode
   p.set_can_loopback(True)
 
-  if p.legacy:
-    busses = [0,1]
-  else:
-    busses = [0,1,2]
-
+  busses = [0,1] if p.legacy else [0,1,2]
   for bus in busses:
     # set bus 0 speed to 250
     p.set_can_speed_kbps(bus, 250)
@@ -71,7 +67,7 @@ def test_reliability(p):
   ts = [(j, 0, "\xaa"*8, 0) for j in addrs]
 
   # 100 loops
-  for i in range(LOOP_COUNT):
+  for _ in range(LOOP_COUNT):
     st = time.time()
 
     p.can_send_many(ts)

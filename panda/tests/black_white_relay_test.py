@@ -91,10 +91,10 @@ def run_test(sleep_duration):
 def test_buses(black_panda, other_panda, test_obj):
   global content_errors
   send_bus, obd, recv_buses = test_obj
-    
+
   black_panda.send_heartbeat()
   other_panda.send_heartbeat()
-    
+
   # Set OBD on send panda
   other_panda.set_gmlan(True if obd else None)
 
@@ -103,13 +103,13 @@ def test_buses(black_panda, other_panda, test_obj):
 
   for recv_bus in recv_buses:
     black_panda.can_clear(recv_bus)
-    
+
   black_panda.can_recv()
   other_panda.can_recv()
 
   # send the characters
   at = random.randint(1, 2000)
-  st = get_test_string()[0:8]
+  st = get_test_string()[:8]
   other_panda.can_send(at, st, send_bus)
   time.sleep(0.05)
 
@@ -122,14 +122,11 @@ def test_buses(black_panda, other_panda, test_obj):
     if (loop[0] != at) or (loop[2] != st):
       content_errors += 1
     loop_buses.append(loop[3])
-    
+
   # test loop buses
   recv_buses.sort()
   loop_buses.sort()
-  if(recv_buses != loop_buses):
-    return False
-  else:
-    return True
+  return recv_buses == loop_buses
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
@@ -141,5 +138,5 @@ if __name__ == "__main__":
     while True:
       run_test(sleep_duration=args.sleep)
   else:
-    for i in range(args.n):
+    for _ in range(args.n):
       run_test(sleep_duration=args.sleep)

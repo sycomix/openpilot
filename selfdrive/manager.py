@@ -163,7 +163,7 @@ car_started_processes = [
 
 def register_managed_process(name, desc, car_started=False):
   global managed_processes, car_started_processes, persistent_processes
-  print("registering %s" % name)
+  print(f"registering {name}")
   managed_processes[name] = desc
   if car_started:
     car_started_processes.append(name)
@@ -186,7 +186,7 @@ def launcher(proc):
     # exec the process
     mod.main()
   except KeyboardInterrupt:
-    cloudlog.warning("child %s got SIGINT" % proc)
+    cloudlog.warning(f"child {proc} got SIGINT")
   except Exception:
     # can't install the crash handler becuase sys.excepthook doesn't play nice
     # with threads, so catch it here.
@@ -207,18 +207,18 @@ def start_managed_process(name):
     return
   proc = managed_processes[name]
   if isinstance(proc, str):
-    cloudlog.info("starting python %s" % proc)
+    cloudlog.info(f"starting python {proc}")
     running[name] = Process(name=name, target=launcher, args=(proc,))
   else:
     pdir, pargs = proc
     cwd = os.path.join(BASEDIR, pdir)
-    cloudlog.info("starting process %s" % name)
+    cloudlog.info(f"starting process {name}")
     running[name] = Process(name=name, target=nativelauncher, args=(pargs, cwd))
   running[name].start()
 
 def start_daemon_process(name, params):
   proc = daemon_processes[name]
-  pid_param = name.capitalize() + 'Pid'
+  pid_param = f'{name.capitalize()}Pid'
   pid = params.get(pid_param)
 
   if pid is not None:
@@ -230,7 +230,7 @@ def start_daemon_process(name, params):
       # process is dead
       pass
 
-  cloudlog.info("starting daemon %s" % name)
+  cloudlog.info(f"starting daemon {name}")
   proc = subprocess.Popen(['python', '-m', proc],
                          cwd='/',
                          stdout=open('/dev/null', 'w'),
@@ -243,23 +243,23 @@ def prepare_managed_process(p):
   proc = managed_processes[p]
   if isinstance(proc, str):
     # import this python
-    cloudlog.info("preimporting %s" % proc)
+    cloudlog.info(f"preimporting {proc}")
     importlib.import_module(proc)
   else:
     # build this process
-    cloudlog.info("building %s" % (proc,))
+    cloudlog.info(f"building {proc}")
     try:
       subprocess.check_call(["make", "-j4"], cwd=os.path.join(BASEDIR, proc[0]))
     except subprocess.CalledProcessError:
       # make clean if the build failed
-      cloudlog.warning("building %s failed, make clean" % (proc, ))
+      cloudlog.warning(f"building {proc} failed, make clean")
       subprocess.check_call(["make", "clean"], cwd=os.path.join(BASEDIR, proc[0]))
       subprocess.check_call(["make", "-j4"], cwd=os.path.join(BASEDIR, proc[0]))
 
 def kill_managed_process(name):
   if name not in running or name not in managed_processes:
     return
-  cloudlog.info("killing %s" % name)
+  cloudlog.info(f"killing {name}")
 
   if running[name].exitcode is None:
     if name in interrupt_processes:
@@ -271,29 +271,31 @@ def kill_managed_process(name):
 
     # give it 5 seconds to die
     running[name].join(5.0)
-    if running[name].exitcode is None:
-      if name in unkillable_processes:
-        cloudlog.critical("unkillable process %s failed to exit! rebooting in 15 if it doesn't die" % name)
-        running[name].join(15.0)
-        if running[name].exitcode is None:
-          cloudlog.critical("FORCE REBOOTING PHONE!")
-          os.system("date >> /sdcard/unkillable_reboot")
-          os.system("reboot")
-          raise RuntimeError
-      else:
-        cloudlog.info("killing %s with SIGKILL" % name)
-        os.kill(running[name].pid, signal.SIGKILL)
-        running[name].join()
+  if running[name].exitcode is None:
+    if name in unkillable_processes:
+      cloudlog.critical(
+          f"unkillable process {name} failed to exit! rebooting in 15 if it doesn't die"
+      )
+      running[name].join(15.0)
+      if running[name].exitcode is None:
+        cloudlog.critical("FORCE REBOOTING PHONE!")
+        os.system("date >> /sdcard/unkillable_reboot")
+        os.system("reboot")
+        raise RuntimeError
+    else:
+      cloudlog.info(f"killing {name} with SIGKILL")
+      os.kill(running[name].pid, signal.SIGKILL)
+      running[name].join()
 
   cloudlog.info("%s is dead with %d" % (name, running[name].exitcode))
   del running[name]
 
 def pm_apply_packages(cmd):
   for p in android_packages:
-    system("pm %s %s" % (cmd, p))
+    system(f"pm {cmd} {p}")
 
 def cleanup_all_processes(signal, frame):
-  cloudlog.info("caught ctrl-c %s %s" % (signal, frame))
+  cloudlog.info(f"caught ctrl-c {signal} {frame}")
 
   pm_apply_packages('disable')
 
@@ -306,8 +308,7 @@ def cleanup_all_processes(signal, frame):
 
 def manager_init(should_register=True):
   if should_register:
-    reg_res = register()
-    if reg_res:
+    if reg_res := register():
       dongle_id, dongle_secret = reg_res
     else:
       raise Exception("server registration failed")
@@ -315,7 +316,7 @@ def manager_init(should_register=True):
     dongle_id = "c"*16
 
   # set dongle id
-  cloudlog.info("dongle id is " + dongle_id)
+  cloudlog.info(f"dongle id is {dongle_id}")
   os.environ['DONGLE_ID'] = dongle_id
 
   cloudlog.info("dirty is %d" % dirty)
@@ -334,7 +335,7 @@ def manager_init(should_register=True):
 
 def system(cmd):
   try:
-    cloudlog.info("running %s" % cmd)
+    cloudlog.info(f"running {cmd}")
     subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
   except subprocess.CalledProcessError as e:
     cloudlog.event("running failed",
@@ -397,7 +398,7 @@ def manager_thread():
         kill_managed_process(p)
 
     # check the status of all processes, did any of them die?
-    running_list = ["   running %s %s" % (p, running[p]) for p in running]
+    running_list = [f"   running {p} {running[p]}" for p in running]
     cloudlog.debug('\n'.join(running_list))
 
     # is this still needed?
@@ -415,7 +416,7 @@ def get_installed_apks():
 
 def install_apk(path):
   # can only install from world readable path
-  install_path = "/sdcard/%s" % os.path.basename(path)
+  install_path = f"/sdcard/{os.path.basename(path)}"
   shutil.copyfile(path, install_path)
 
   ret = subprocess.call(["pm", "install", "-r", install_path])
@@ -432,11 +433,11 @@ def update_apks():
     if app not in installed:
       installed[app] = None
 
-  cloudlog.info("installed apks %s" % (str(installed), ))
+  cloudlog.info(f"installed apks {str(installed)}")
 
   for app in installed.keys():
 
-    apk_path = os.path.join(BASEDIR, "apk/"+app+".apk")
+    apk_path = os.path.join(BASEDIR, f"apk/{app}.apk")
     if not os.path.exists(apk_path):
       continue
 
@@ -444,15 +445,15 @@ def update_apks():
     h2 = None
     if installed[app] is not None:
       h2 = hashlib.sha1(open(installed[app]).read()).hexdigest()
-      cloudlog.info("comparing version of %s  %s vs %s" % (app, h1, h2))
+      cloudlog.info(f"comparing version of {app}  {h1} vs {h2}")
 
     if h2 is None or h1 != h2:
-      cloudlog.info("installing %s" % app)
+      cloudlog.info(f"installing {app}")
 
       success = install_apk(apk_path)
       if not success:
-        cloudlog.info("needing to uninstall %s" % app)
-        system("pm uninstall %s" % app)
+        cloudlog.info(f"needing to uninstall {app}")
+        system(f"pm uninstall {app}")
         success = install_apk(apk_path)
 
       assert success
@@ -501,7 +502,7 @@ def manager_update():
 
   uninstall = [app for app in get_installed_apks().keys() if app in ("com.spotify.music", "com.waze")]
   for app in uninstall:
-    cloudlog.info("uninstalling %s" % app)
+    cloudlog.info(f"uninstalling {app}")
     os.system("pm uninstall % s" % app)
 
 def manager_prepare():
@@ -590,9 +591,11 @@ def main():
     spinner_proc = None
   else:
     spinner_text = "chffrplus" if params.get("Passive")=="1" else "openpilot"
-    spinner_proc = subprocess.Popen(["./spinner", "loading %s"%spinner_text],
-      cwd=os.path.join(BASEDIR, "selfdrive", "ui", "spinner"),
-      close_fds=True)
+    spinner_proc = subprocess.Popen(
+        ["./spinner", f"loading {spinner_text}"],
+        cwd=os.path.join(BASEDIR, "selfdrive", "ui", "spinner"),
+        close_fds=True,
+    )
   try:
     manager_update()
     manager_init()

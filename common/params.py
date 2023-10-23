@@ -243,16 +243,13 @@ class DBWriter(DBAccessor):
           #                 copies to be left behind, but we still want to overwrite.
           pass
 
-        new_data_path = "{}.link".format(tempdir_path)
+        new_data_path = f"{tempdir_path}.link"
         os.symlink(os.path.basename(tempdir_path), new_data_path)
         os.rename(new_data_path, data_path)
         fsync_dir(self._path)
       finally:
-        # If the rename worked, we can delete the old data. Otherwise delete the new one.
-        success = new_data_path is not None and os.path.exists(data_path) and (
-          os.readlink(data_path) == os.path.basename(tempdir_path))
-
-        if success:
+        if (success := new_data_path is not None and os.path.exists(data_path)
+            and (os.readlink(data_path) == os.path.basename(tempdir_path))):
           if old_data_path is not None:
             shutil.rmtree(old_data_path)
         else:
@@ -271,7 +268,7 @@ class DBWriter(DBAccessor):
 
 
 def read_db(params_path, key):
-  path = "%s/d/%s" % (params_path, key)
+  path = f"{params_path}/d/{key}"
   try:
     with open(path, "rb") as f:
       return f.read()
@@ -280,7 +277,7 @@ def read_db(params_path, key):
 
 def write_db(params_path, key, value):
   prev_umask = os.umask(0)
-  lock = FileLock(params_path+"/.lock", True)
+  lock = FileLock(f"{params_path}/.lock", True)
   lock.acquire()
 
   try:
@@ -290,7 +287,7 @@ def write_db(params_path, key, value):
       f.flush()
       os.fsync(f.fileno())
 
-    path = "%s/d/%s" % (params_path, key)
+    path = f"{params_path}/d/{key}"
     os.rename(tmp_path, path)
     fsync_dir(os.path.dirname(path))
   finally:
@@ -302,15 +299,12 @@ class Params(object):
     self.db = db
 
     # create the database if it doesn't exist...
-    if not os.path.exists(self.db+"/d"):
+    if not os.path.exists(f"{self.db}/d"):
       with self.transaction(write=True):
         pass
 
   def transaction(self, write=False):
-    if write:
-      return DBWriter(self.db)
-    else:
-      return DBReader(self.db)
+    return DBWriter(self.db) if write else DBReader(self.db)
 
   def _clear_keys_with_type(self, tx_type):
     with self.transaction(write=True) as txn:
@@ -365,11 +359,11 @@ if __name__ == "__main__":
     for k in keys:
       pp = params.get(k)
       if pp is None:
-        print("%s is None" % k)
+        print(f"{k} is None")
       elif all(ord(c) < 128 and ord(c) >= 32 for c in pp):
-        print("%s = %s" % (k, pp))
+        print(f"{k} = {pp}")
       else:
-        print("%s = %s" % (k, pp.encode("hex")))
+        print(f'{k} = {pp.encode("hex")}')
 
   # Test multiprocess:
   # seq 0 100000 | xargs -P20 -I{} python common/params.py DongleId {} && sleep 0.05

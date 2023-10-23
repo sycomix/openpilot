@@ -4,10 +4,7 @@ from selfdrive.car import dbc_dict
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
 def get_hud_alerts(visual_alert):
-  if visual_alert == VisualAlert.steerRequired:
-    return 5
-  else:
-    return 0
+  return 5 if visual_alert == VisualAlert.steerRequired else 0
 
 class CAR:
   ELANTRA = "HYUNDAI ELANTRA LIMITED ULTIMATE 2017"
